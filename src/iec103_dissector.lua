@@ -88,6 +88,34 @@ local iec103_func_type_table = {
 [255] = "GLB  global function type ",
 }
 
+local iec103_data_type_table = {
+[0]  = "No data",
+[1]  = "OS8ASCII,OS8[1..8][ASCII 8-bit-code>",
+[2]  = "PACKEDBITSTRING := BS1",
+[3]  = "UI",
+[4]  = "I",
+[5]  = "UF",
+[6]  = "F",
+[7]  = "R32.23 := Short real IEEE 754",
+[8]  = "R64.53 := Real IEEE 754",
+[9]  = "DOUBLE POINT INFORMATION (see 7.2.6.5)",
+[10] = "SINGLE POINT INFORMATION",
+[11] = "DOUBLE POINT INFORMATION WITH TRANSIENT AND ERROR,UI2[1..2] [0..3>",
+[12] = "MEASURAND WITH QUALITY DESCRIPTOR (see 7.2.6.8)",
+[13] = "Reserved",
+[14] = "BINARY TIME (see 7.2.6.29)",
+[15] = "GENERIC IDENTIFICATION NUMBER (see 7.2.6.31)",
+[16] = "RELATIVE TIME (see 7.2.6.15)",
+[17] = "FUNCTION TYPE AND INFORMATION NUMBER,CP16 {Type, INF}",
+[18] = "TIME TAGGED MESSAGE,CP48 {DPI, RES, TIME, SIN}",
+[19] = "TIME TAGGED MESSAGE WITH RELATIVE TIME,CP80 {DPI, RES, RET, FAN, TIME, SIN}",
+[20] = "TIME TAGGED MEASURAND WITH RELATIVE TIME,CP96 {VAL, RET, FAN, TIME}",
+[21] = "EXTERNAL TEXT NUMBER := UIi",
+[22] = "GENERIC REPLY CODE (see 7.2.6.36)",
+[23] = "DATA STRUCTURE,CPii{(GDD, GID)} (see 7.2.6.32 and 7.2.6.33)",
+[24] = "INDEX",
+}
+
 iec103_valid_table = {
 [0 ] = "Valid",
 [1 ] = "Invalid"
@@ -152,17 +180,25 @@ local msg_rii = ProtoField.string("iec103.RII","Return information identifier")
 local msg_ngd = ProtoField.string("iec103.NGD","Number of generic data sets")
 local msg_gin = ProtoField.string("iec103.GIN","Generic identification number")
 local msg_gdd = ProtoField.string("iec103.GDD","Generic data description")
+local msg_gdd_datatype = ProtoField.string("iec103.GDD_Datatype","Data Type")
+local msg_gdd_datasize = ProtoField.string("iec103.GDD_Datasize","Data Size")
+local msg_gdd_number = ProtoField.string("iec103.GDD_number","Number")
+local msg_gdd_continue = ProtoField.string("iec103.GDD_continue","Continue Data")
+
 local msg_gid = ProtoField.string("iec103.GID","Generic identification data")
 local msg_kod = ProtoField.string("iec103.KOD","Kind of description")
 
+
 local msg_gid_data = ProtoField.string("iec103.GID_DATA","Data")
+
+local msg_cp56 = ProtoField.string("iec103.CP56Time2a","CP56Time2a")
 
 local msg_checksum = ProtoField.uint8("iec103.Check_Sum","Check_Sum",base.HEX)
 local msg_end = ProtoField.uint8("iec103.End_Byte","End",base.HEX)
 
 local msg_debug = ProtoField.string("iec103.DebugStr","DebugStr")
 
-iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset}
+iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue}
 
 --protocol parameters in Wiresh preference
 local ZEROBYTE   = 0
@@ -188,6 +224,34 @@ iec103.prefs.linkaddrbytes = Pref.enum(
 )
 
 local funccount = 0
+
+function Get_gid_data(t_gid,buffer, start_pos, datatype,datasize)
+	local valstr = ""
+	if datatype == 1 then
+		local val = buffer(start_pos,1):uint()
+		valstr = tostring(val)
+	elseif datatype == 2 then
+		valstr = buffer(start_pos,datasize):tostring()
+	elseif datatype == 3 then
+		local val = buffer(start_pos,datasize):le_uint()
+		valstr = tostring(val)
+	elseif datatype == 4 then
+		local val = buffer(start_pos,datasize):le_int()
+		valstr = tostring(val)
+	elseif datatype == 5 then
+		local val = buffer(start_pos,1):uint()
+		local val_2 = val/256.0
+		valstr = string.format("%.6f",val_2)
+	elseif datatype == 18 then
+		local dpi = buffer(start_pos,1):bitfield(6,2)
+		valstr = "DPI:"..iec103_dpi_str_table[dpi]
+	elseif datatype == 19 then
+		local dpi = buffer(start_pos,1):bitfield(6,2)
+		valstr = "DPI:"..iec103_dpi_str_table[dpi]
+	end
+	
+	return valstr
+end
 
 function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
 
@@ -265,7 +329,7 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
 		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 4 :"..buffer(start_pos,1):string())
 		
 	elseif msgtypeid:uint() == 6 then
-	
+		t_asdu:add(msg_cp56,buffer(start_pos,7),"")
 	elseif msgtypeid:uint() == 7 then
 		t_asdu:add(msg_scn,buffer(start_pos,1), buffer(start_pos,1):uint())
 		
@@ -299,14 +363,22 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
 			t_dset:add(msg_kod, buffer(start_pos, 1), iec103_kod_table[buffer(start_pos, 1):uint()])
 			
 			start_pos = start_pos + 1
+			local datatype = buffer(start_pos, 1):uint()
 			local datasize = buffer(start_pos+1, 1):uint()
 			local number = buffer(start_pos+2, 1):bitfield(1,7)
+			local cont_d = buffer(start_pos+2, 1):bitfield(0,1)
 			
-			local datatype_str = tostring(buffer(start_pos, 1):uint())
+			local datatype_str = tostring(datatype)
 			local datasize_str = tostring(datasize)
 			local number_str = tostring(number)
-			local contdata_str = tostring(buffer(start_pos+2, 1):bitfield(0,1))
-			t_dset:add(msg_gdd, buffer(start_pos, 3), "Datatype:"..datatype_str..",Datasize:"..datasize_str..",Number:"..number_str..",Continue data:"..contdata_str)
+			local contdata_str = tostring(cont_d)
+			
+			local t_gdd = t_dset:add(msg_gdd, buffer(start_pos, 3), iec103_data_type_table[datatype])
+			
+			t_gdd:add(msg_gdd_datatype,buffer(start_pos,1),datatype_str.."--"..iec103_data_type_table[datatype])
+			t_gdd:add(msg_gdd_datasize,buffer(start_pos+1,1),datasize_str)
+			t_gdd:add(msg_gdd_number,buffer(start_pos+2,1),number_str)
+			t_gdd:add(msg_gdd_continue,buffer(start_pos+2,1),contdata_str)
 			
 			start_pos = start_pos + 3
 			t_gid = t_dset:add(msg_gid, buffer(start_pos, datasize*number),">>>")
@@ -316,7 +388,8 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
 			local cnt = 0
 			
 			for cnt = 1, number, 1 do
-				t_gid:add(msg_gid_data,buffer(startdatapos, datasize), tostring(cnt))
+				local gid_data_str = Get_gid_data(t_gid, buffer, start_pos, datatype,datasize)
+				t_gid:add(msg_gid_data,buffer(startdatapos, datasize), tostring(cnt).." "..gid_data_str)
 				startdatapos = startdatapos + datasize
 			end
 			
