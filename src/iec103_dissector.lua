@@ -1,0 +1,484 @@
+-- IEC 103 protocol analyzer plugin for Wireshark
+
+--Type id description
+iec103_typeid_table = {
+[1 ] = "time-tagged message",
+[2 ] = "time-tagged message with relative time",
+[3 ] = "measurands I",
+[4 ] = "time-tagged measurands with relative time",
+[5 ] = "identification",
+[6 ] = "time synchronization",
+[7 ] = "general interrogation",
+[8 ] = "general interrogation termination",
+[9 ] = "measurands II",
+[10] = "generic data",
+[11] = "generic identification",
+[20] = "general command",
+[21] = "generic command",
+[23] = "list of recorded disturbances",
+[24] = "order for disturbance data transmission",
+[25] = "acknowledgement for disturbance data transmission",
+[26] = "ready for transmission of disturbance data",
+[27] = "ready for transmission of a channel",
+[28] = "ready for transmission of tags",
+[29] = "transmission of tags",
+[30] = "transmission of disturbance values",
+[31] = "end of transmission",
+
+}
+
+--Type id description
+iec103_kod_table = {
+[0]  = "NO KOD SPECIFIED",
+[1]  = "ACTUAL VALUE",
+[2]  = "DEFAULT VALUE",
+[3]  = "RANGE (minimum value, maximum value and step size)",
+[4]  = "(reserved)",
+[5]  = "PRECISION (n, m)",
+[6]  = "FACTOR",
+[7]  = "% REFERENCE",
+[8]  = "ENUMERATION",
+[9]  = "DIMENSION",
+[10] = "DESCRIPTION",
+[11] = "(reserved)",
+[12] = "PASSWORD ENTRY",
+[13] = "IS READ ONLY",
+[14] = "IS WRITE ONLY",
+[15] = "(reserved)",
+[16] = "(reserved)",
+[17] = "(reserved)",
+[18] = "(reserved)",
+[19] = "CORRESPONDING FUNCTION TYPE AND INFORMATION NUMBER",
+[20] = "CORRESPONDING EVENT",
+[21] = "ENUMERATED TEXT ARRAY",
+[22] = "ENUMERATED VALUE ARRAY",
+[23] = "RELATED ENTRIES",
+}
+
+--Cause of transfer
+iec103_cot_table = {
+[1 ] = "spontaneous",
+[2 ] = "cyclic",
+[3 ] = "reset frame count bit (FCB)",
+[4 ] = "reset communication unit (CU)",
+[5 ] = "start / restart",
+[6 ] = "power on",
+[7 ] = "test mode",
+[8 ] = "time synchronization",
+[9 ] = "general interrogation",
+[10] = "termination of general interrogation",
+[11] = "local operation",
+[12] = "remote operation",
+[20] = "positive acknowledgement of command",
+[21] = "negative acknowledgement of command",
+[31] = "transmission of disturbance data",
+[40] = "positive acknowledgement of generic write command",
+[41] = "negative acknowledgement of generic write command",
+[42] = "valid data response to generic read command",
+[43] = "invalid data response to generic read command",
+[44] = "generic write confirmation",
+}
+
+local iec103_func_type_table = {
+[128] = "t(z) distance protection ",
+[160] = "I>>  overcurrent protection ",
+[176] = "DIT  transformer differential protection ",
+[192] = "DIL  line differential protection ",
+[254] = "GEN  generic function type ",
+[255] = "GLB  global function type ",
+}
+
+iec103_valid_table = {
+[0 ] = "Valid",
+[1 ] = "Invalid"
+}
+
+iec103_spi_str_table = {
+[0] = "OFF",
+[1] = "ON"
+}
+
+iec103_dpi_str_table = {
+[0] = "Indeterminate/intermediate",
+[1] = "OFF",
+[2] = "ON",
+[3] = "Indeterminate"
+}
+-- declare our protocol
+iec103 = Proto("iec103", "IEC 60870-5-103")
+
+local msg_start = ProtoField.uint8("iec103.Start_Byte","Start",base.HEX)
+local msg_length = ProtoField.uint8("iec103.Msg_Length","Length",base.DEC)
+local msg_length_rep = ProtoField.uint8("iec103.Msg_Length_Rep","Length_Repeat",base.DEC)
+local msg_start_rep = ProtoField.uint8("iec103.Start_Byte_Rep","Start_Repeat",base.HEX)
+local msg_ctrl = ProtoField.uint8("iec103.Control_Field","Control_Field",base.HEX)
+
+local msg_link_addr = ProtoField.uint16("iec103.Link_Addr","Link_Addr",base.DEC)
+
+--local msg_ASDU = ProtoField.uint8("iec103.ASDU","ASDU",base.HEX)
+local msg_ASDU = ProtoField.string("iec103.ASDU","ASDU")
+
+local msg_typeid = ProtoField.uint8("iec103.Type_id","Type_id",base.DEC)
+local msg_vsq = ProtoField.uint8("iec103.VSQ","Variable_Structure_Qualifier",base.HEX)
+local msg_vsq_sq = ProtoField.string("iec103.VSQ_SQ","SQ = ")
+local msg_vsq_obj_num = ProtoField.string("iec103.VSQ_OBJ_NUM","Object number = ")
+
+local msg_cot = ProtoField.uint8("iec103.Cause_of_Trans","Cause of Trans",base.DEC)
+local msg_comm_addr = ProtoField.uint8("iec103.Common_Addr","Common_address",base.DEC)
+local msg_obj_addr = ProtoField.uint8("iec103.Obj_Addr","Obj_address",base.DEC)
+local msg_obj = ProtoField.string("iec103.Objects","Objects")
+local msg_obj_single = ProtoField.string("iec103.Object_Single","Object")
+local msg_obj_value = ProtoField.string("iec103.Object_Value","Value")
+
+local msg_func_type = ProtoField.string("iec103.Function_Type","Func_Type")
+local msg_info_num = ProtoField.string("iec103.Info_Num","Info_Num")
+
+local msg_dpi = ProtoField.string("iec103.DPI","DPI")
+local msg_bin_time = ProtoField.string("iec103.BIN_TIME","BIN_Time")
+local msg_sin = ProtoField.string("iec103.SIN","Supplementary information")
+
+local msg_ret = ProtoField.string("iec103.Relative_time","Relative time")
+local msg_fan = ProtoField.string("iec103.Fault_number","Fault number")
+
+local msg_mea = ProtoField.string("iec103.Measurands_I","Measurands I")
+local msg_scl = ProtoField.string("iec103.Short_Circuit_Location","Short Circuit Location")
+
+local msg_col = ProtoField.string("iec103.Compatibility_level","Compatibility level")
+local msg_asc = ProtoField.string("iec103.Char","Char")
+local msg_scn = ProtoField.string("iec103.Scan_number","Scan number")
+
+local msg_dset = ProtoField.string("iec103.Dataset","Data Set")
+local msg_rii = ProtoField.string("iec103.RII","Return information identifier")
+local msg_ngd = ProtoField.string("iec103.NGD","Number of generic data sets")
+local msg_gin = ProtoField.string("iec103.GIN","Generic identification number")
+local msg_gdd = ProtoField.string("iec103.GDD","Generic data description")
+local msg_gid = ProtoField.string("iec103.GID","Generic identification data")
+local msg_kod = ProtoField.string("iec103.KOD","Kind of description")
+
+local msg_gid_data = ProtoField.string("iec103.GID_DATA","Data")
+
+local msg_checksum = ProtoField.uint8("iec103.Check_Sum","Check_Sum",base.HEX)
+local msg_end = ProtoField.uint8("iec103.End_Byte","End",base.HEX)
+
+local msg_debug = ProtoField.string("iec103.DebugStr","DebugStr")
+
+iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset}
+
+--protocol parameters in Wiresh preference
+local ZEROBYTE   = 0
+local ONEBYTE    = 1
+local TWOBYTE    = 2
+local THREEBYTE  = 3
+ 
+local table_012 = {
+        { 0, "Zero Byte"        , ZEROBYTE },
+		{ 1, "One Byte"         , ONEBYTE },
+        { 2, "Two Bytes"        , TWOBYTE },
+}
+
+-- Create enum preference that shows as radio button under
+-- iec103 Protocol's preferences
+-- Link address width
+iec103.prefs.linkaddrbytes = Pref.enum(
+        "Link address width:",                 				-- label
+        ONEBYTE,                    						-- default value
+        "Zero, One or two bytes for link address field",  	-- description
+        table_012,                     						-- enum table
+        true                           						-- show as radio button
+)
+
+local funccount = 0
+
+function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
+
+	if msgtypeid:uint() == 1 then
+		t_asdu:add(msg_dpi, buffer(start_pos, 1), iec103_dpi_str_table[buffer(start_pos,1):uint()])
+		t_asdu:add(msg_bin_time, buffer(start_pos+1, 4), buffer(start_pos+1, 4):uint())
+		t_asdu:add(msg_sin,buffer(start_pos+5, 1),buffer(start_pos+5, 1):uint())
+	elseif msgtypeid:uint() == 2 then
+		t_asdu:add(msg_dpi, buffer(start_pos, 1), iec103_dpi_str_table[buffer(start_pos,1):uint()])
+		t_asdu:add(msg_ret,buffer(start_pos+1, 2),buffer(start_pos+1, 2):uint())
+		t_asdu:add(msg_fan,buffer(start_pos+3, 2),buffer(start_pos+3, 2):le_uint())
+		t_asdu:add(msg_bin_time, buffer(start_pos+5, 4), buffer(start_pos+5, 4):uint())
+		t_asdu:add(msg_sin,buffer(start_pos+9, 1),buffer(start_pos+9, 1):uint())
+	elseif msgtypeid:uint() == 3 then
+		t_asdu:add(msg_mea,buffer(start_pos,2),"current L2 = "..buffer(start_pos,2):tostring())
+		
+		start_pos = start_pos + 2
+		t_asdu:add(msg_mea,buffer(start_pos,2),"voltage L1-L2 = "..buffer(start_pos,2):tostring())
+		
+		start_pos = start_pos + 2
+		t_asdu:add(msg_mea,buffer(start_pos,2),"active power = "..buffer(start_pos,2):tostring())
+		
+		start_pos = start_pos + 2
+		t_asdu:add(msg_mea,buffer(start_pos,2),"reactive power Q = "..buffer(start_pos,2):tostring())
+		
+	elseif msgtypeid:uint() == 4 then
+		t_asdu:add(msg_scl,buffer(start_pos,4),tostring(buffer(start_pos,4):float()))
+		
+		start_pos = start_pos + 4
+		t_asdu:add(msg_ret,buffer(start_pos, 2),buffer(start_pos, 2):uint())
+		
+		start_pos = start_pos + 2
+		t_asdu:add(msg_fan,buffer(start_pos, 2),buffer(start_pos, 2):uint())
+		
+		start_pos = start_pos + 2
+		t_asdu:add(msg_bin_time, buffer(start_pos, 4), buffer(start_pos, 4):uint())
+		
+	elseif msgtypeid:uint() == 5 then
+		t_asdu:add(msg_col,buffer(start_pos,1),tostring(buffer(start_pos,1):uint()))
+		
+		start_pos = start_pos + 1
+		t_asdu:add(msg_asc,buffer(start_pos,1),"1 :"..buffer(start_pos,1):string())
+		
+		start_pos = start_pos + 1
+		t_asdu:add(msg_asc,buffer(start_pos,1),"2 :"..buffer(start_pos,1):string())
+		
+		start_pos = start_pos + 1
+		t_asdu:add(msg_asc,buffer(start_pos,1),"3 :"..buffer(start_pos,1):string())
+		
+		start_pos = start_pos + 1
+		t_asdu:add(msg_asc,buffer(start_pos,1),"4 :"..buffer(start_pos,1):string())
+		
+		start_pos = start_pos + 1
+		t_asdu:add(msg_asc,buffer(start_pos,1),"5 :"..buffer(start_pos,1):string())
+		
+		start_pos = start_pos + 1
+		t_asdu:add(msg_asc,buffer(start_pos,1),"6 :"..buffer(start_pos,1):string())
+		
+		start_pos = start_pos + 1
+		t_asdu:add(msg_asc,buffer(start_pos,1),"7 :"..buffer(start_pos,1):string())
+		
+		start_pos = start_pos + 1
+		t_asdu:add(msg_asc,buffer(start_pos,1),"8 :"..buffer(start_pos,1):string())
+		
+		start_pos = start_pos + 1
+		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 1 :"..buffer(start_pos,1):string())
+		
+		start_pos = start_pos + 1
+		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 2 :"..buffer(start_pos,1):string())
+		
+		start_pos = start_pos + 1
+		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 3 :"..buffer(start_pos,1):string())
+		
+		start_pos = start_pos + 1
+		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 4 :"..buffer(start_pos,1):string())
+		
+	elseif msgtypeid:uint() == 6 then
+	
+	elseif msgtypeid:uint() == 7 then
+		t_asdu:add(msg_scn,buffer(start_pos,1), buffer(start_pos,1):uint())
+		
+	elseif msgtypeid:uint() == 8 then
+	
+	elseif msgtypeid:uint() == 9 then
+	
+	elseif msgtypeid:uint() == 10 then
+		t_asdu:add(msg_rii, buffer(start_pos, 1), buffer(start_pos, 1):uint())
+		
+		start_pos = start_pos + 1
+		local dNo = buffer(start_pos, 1):bitfield(2,6)
+		local dcount = buffer(start_pos, 1):bitfield(1,1)
+		local dcont = buffer(start_pos, 1):bitfield(0,1)
+		
+		t_asdu:add(msg_ngd, buffer(start_pos, 1), tostring(dNo)..",further ASDU with same RII:"..tostring(dcont))
+		
+		start_pos = start_pos + 1
+		
+		local maglen = buffer(1,1):uint()
+		local dsetcnt = 1
+		while start_pos <= maglen do
+			local t_dset = t_asdu:add(msg_dset,buffer(start_pos, 2),dsetcnt)
+			dsetcnt = dsetcnt + 1
+			
+			local group_str = tostring(buffer(start_pos, 1):uint())
+			local entry_str = tostring(buffer(start_pos+1, 1):uint())
+			t_dset:add(msg_gin, buffer(start_pos, 2), "Group:"..group_str..",Entry:"..entry_str)
+			
+			start_pos = start_pos + 2
+			t_dset:add(msg_kod, buffer(start_pos, 1), iec103_kod_table[buffer(start_pos, 1):uint()])
+			
+			start_pos = start_pos + 1
+			local datasize = buffer(start_pos+1, 1):uint()
+			local number = buffer(start_pos+2, 1):bitfield(1,7)
+			
+			local datatype_str = tostring(buffer(start_pos, 1):uint())
+			local datasize_str = tostring(datasize)
+			local number_str = tostring(number)
+			local contdata_str = tostring(buffer(start_pos+2, 1):bitfield(0,1))
+			t_dset:add(msg_gdd, buffer(start_pos, 3), "Datatype:"..datatype_str..",Datasize:"..datasize_str..",Number:"..number_str..",Continue data:"..contdata_str)
+			
+			start_pos = start_pos + 3
+			t_gid = t_dset:add(msg_gid, buffer(start_pos, datasize*number),">>>")
+			
+			local startdatapos = start_pos
+			
+			local cnt = 0
+			
+			for cnt = 1, number, 1 do
+				t_gid:add(msg_gid_data,buffer(startdatapos, datasize), tostring(cnt))
+				startdatapos = startdatapos + datasize
+			end
+			
+			start_pos = startdatapos
+		end
+		
+	end
+end
+
+-- create a function to dissect it
+function iec103.dissector(buffer,pinfo,tree)
+   
+	pinfo.cols.protocol = iec103.name
+	
+	local msgstartbyte = buffer(0,1):uint()
+	
+	local iec103_link_addr_bytes = iec103.prefs.linkaddrbytes
+	local iec103_comm_addr_bytes = 1
+	local iec103_cot_bytes = 1
+	
+	if msgstartbyte == 16 then
+		local t0 = tree:add(iec103,buffer(), "IEC 60870-5-103 Fixed Length Message")
+		t0:add(msg_start, buffer(0,1))
+		t0:add(msg_ctrl, buffer(1,1))
+		
+		t0:add_le(msg_link_addr,buffer(2,iec103_link_addr_bytes))
+		
+		--if iec103_link_addr_bytes == 1 then
+		--	t0:add(msg_link_addr,buffer(2,1))
+		--elseif iec103_link_addr_bytes == 2 then
+		--	t0:add_le(msg_link_addr,buffer(2,2))
+		--end
+		
+		t0:add(msg_checksum, buffer(2 + iec103_link_addr_bytes,1))
+		t0:add(msg_end, buffer(3 + iec103_link_addr_bytes,1))
+		
+		t0:add(msg_debug,iec103_link_addr_bytes)
+		
+	elseif msgstartbyte == 104 then
+		local t0 = tree:add(iec103,buffer(), "IEC 60870-5-103 Variable Length Message")
+		
+		t0:add(msg_start, buffer(0,1))
+		t0:add(msg_length,buffer(1,1))
+		t0:add(msg_length_rep,buffer(2,1))
+		t0:add(msg_start_rep, buffer(3,1))
+		t0:add(msg_ctrl, buffer(4,1))
+		
+		t0:add_le(msg_link_addr,buffer(5,iec103_link_addr_bytes))
+		
+		local msglen = buffer(1,1):uint()
+		
+		local t_asdu = t0:add(msg_ASDU,buffer(5+iec103_link_addr_bytes, msglen-1-iec103_link_addr_bytes), ">>>")
+		
+		local msgtypeid = buffer(5+iec103_link_addr_bytes, 1)
+		local t_typeid = t_asdu:add(msg_typeid, msgtypeid)
+		t_typeid:append_text(" ("..iec103_typeid_table[msgtypeid:uint()]..")")
+		
+		local msgvsq = buffer(6+iec103_link_addr_bytes, 1)
+		local t_vsq = t_asdu:add(msg_vsq,msgvsq)
+		
+		if buffer(6+iec103_link_addr_bytes, 1):bitfield(0,1) == 1 then
+			t_vsq:add(msg_vsq_sq, buffer(6+iec103_link_addr_bytes, 1), "1, address included in each object")
+		else
+			t_vsq:add(msg_vsq_sq, buffer(6+iec103_link_addr_bytes, 1), "0, only one address in the first object")
+		end
+		
+		local msgvsq_sq = buffer(6+iec103_link_addr_bytes, 1):bitfield(0,1)
+		local msgobjnum = buffer(6+iec103_link_addr_bytes, 1):bitfield(1,7)
+		t_vsq:add(msg_vsq_obj_num, buffer(6+iec103_link_addr_bytes, 1), msgobjnum)
+		
+		local msgcotid = buffer(7+iec103_link_addr_bytes, iec103_cot_bytes):le_uint()
+		local t_cot = t_asdu:add(msg_cot, buffer(7+iec103_link_addr_bytes, iec103_cot_bytes), msgcotid)
+		t_cot:append_text(" ("..iec103_cot_table[msgcotid]..")")
+
+		t_asdu:add_le(msg_comm_addr, buffer(8+iec103_link_addr_bytes, iec103_comm_addr_bytes))
+		
+		local func_type = buffer(9+iec103_link_addr_bytes, 1):uint()
+		t_asdu:add(msg_func_type,buffer(9+iec103_link_addr_bytes, 1), tostring(func_type) .."-"..iec103_func_type_table[func_type])
+		
+		local info_num = buffer(10+iec103_link_addr_bytes, 1):uint()
+		t_asdu:add(msg_info_num,buffer(10+iec103_link_addr_bytes, 1), info_num)
+		
+		Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,11+iec103_link_addr_bytes)
+		
+		--[[
+		if msgvsq_sq == 0 then
+			objlen_total = msgobjnum * (iec103_obj_addr_bytes + iec103_asdu_obj_len_table[msgtypeid:uint()])
+			obj_len_each = iec103_obj_addr_bytes + iec103_asdu_obj_len_table[msgtypeid:uint()]
+		else
+			objlen_total = iec103_obj_addr_bytes + msgobjnum * iec103_asdu_obj_len_table[msgtypeid:uint()]
+			obj_len_each = iec103_asdu_obj_len_table[msgtypeid:uint()]
+		end
+		
+		
+		local obj_start_pos = 8+iec103_link_addr_bytes+iec103_comm_addr_bytes
+		local obj_start_addr = buffer(8+iec103_link_addr_bytes+iec103_comm_addr_bytes, iec103_obj_addr_bytes):le_uint()
+		
+		local t_objs = t_asdu:add(msg_obj,buffer(obj_start_pos, objlen_total),">>> total "..msgobjnum)
+		local obj_addr = 0
+		
+		for cnt = 1, msgobjnum, 1 do
+			
+			--if VSQ SQ = 0, get the address from each object 
+		    if msgvsq_sq == 0 then
+				local t_obj_single = t_objs:add(msg_obj_single,buffer(obj_start_pos, obj_len_each), cnt)
+				obj_addr = buffer(obj_start_pos, iec103_obj_addr_bytes):le_uint()
+				t_obj_single:append_text(" , address: "..obj_addr)
+				
+				t_obj_single:add_le(msg_obj_addr, buffer(obj_start_pos, iec103_obj_addr_bytes))
+				--t_obj_single:add(msg_obj_value,buffer(obj_start_pos+iec103_obj_addr_bytes, iec103_asdu_obj_len_table[msgtypeid:uint()]),"TRUE")
+				Add_Object_Value(t_obj_single,msgtypeid, buffer, obj_start_pos+iec103_obj_addr_bytes)
+				
+			else
+				
+				--if VSQ SQ = 1, get the address from the first object
+				if cnt == 1 then
+					local t_obj_single = t_objs:add(msg_obj_single,buffer(obj_start_pos, obj_len_each+iec103_obj_addr_bytes), cnt)
+					obj_addr = buffer(obj_start_pos, iec103_obj_addr_bytes):le_uint()
+					t_obj_single:append_text(" , address: "..obj_addr)
+				
+					t_obj_single:add_le(msg_obj_addr, buffer(obj_start_pos, iec103_obj_addr_bytes))
+					--t_obj_single:add(msg_obj_value,buffer(obj_start_pos+iec103_obj_addr_bytes, iec103_asdu_obj_len_table[msgtypeid:uint()]),"TRUE")
+					Add_Object_Value(t_obj_single,msgtypeid, buffer, obj_start_pos+iec103_obj_addr_bytes)
+					
+				--update the following object address 
+				else
+					local t_obj_single = t_objs:add(msg_obj_single,buffer(obj_start_pos, obj_len_each), cnt)
+					obj_addr = obj_addr + 1
+					t_obj_single:append_text(" , address: "..obj_addr)
+				
+					t_obj_single:add(msg_obj_addr, buffer(obj_start_pos, iec103_asdu_obj_len_table[msgtypeid:uint()]),obj_addr)
+					--t_obj_single:add(msg_obj_value,buffer(obj_start_pos, iec103_asdu_obj_len_table[msgtypeid:uint()]),"TRUE")
+					Add_Object_Value(t_obj_single,msgtypeid, buffer, obj_start_pos)
+					
+				end
+			end
+			
+			--if VSQ SQ = 1, the object address included in the first object
+			--increasement also need including the object address width
+			if msgvsq_sq == 1 and cnt == 1 then
+				obj_start_pos = obj_start_pos + iec103_obj_addr_bytes + iec103_asdu_obj_len_table[msgtypeid:uint()]
+			else
+				obj_start_pos = obj_start_pos + obj_len_each
+			end
+		
+		end
+		
+		--]]
+		
+		t0:add(msg_checksum, buffer(4 + msglen,1))
+		t0:add(msg_end, buffer(5 + msglen,1))
+		
+		local temp = 100
+		t0:add(msg_debug,temp)
+		
+	elseif msg_start == 229 then
+		local t0 = tree:add(iec103,buffer(), "IEC 60870-5-103 Linke layer ACK")
+	end
+	
+end
+
+-- load the tcp.port table
+tcp_table = DissectorTable.get("tcp.port")
+-- register our protocol to handle tcp port 22403
+tcp_table:add(22403,iec103)
