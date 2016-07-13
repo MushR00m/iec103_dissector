@@ -116,6 +116,45 @@ local iec103_data_type_table = {
 [24] = "INDEX",
 }
 
+iec103_prm1_func_table = {
+[0]  = "Reset of Remote link. Frame type: SEND/CONFIRM expected",
+[1]  = "Reset of user process. Frame type: SEND/CONFIRM expected",
+[2]  = "Reserved. Frame type: SEND/CONFIRM expected",
+[3]  = "User data. Frame type: SEND/CONFIRM expected",
+[4]  = "User data. Frame type: SEND/NO REPLY expected",
+[5]  = "Reserved",
+[6]  = "Reserved for special use by agreement",
+[7]  = "Reserved for special use by agreement",
+[8]  = "Expected response specifies access demand. Frame type: REQUEST for access demand",
+[9]  = "Request status of link. Frame type: REQUEST/RESPOND expected",
+[10]  = "Request user data class 1. Frame type: REQUEST/RESPOND expected",
+[11]  = "Request user data class 2. Frame type: REQUEST/RESPOND expected",
+[12]  = "Reserved",
+[13]  = "Reserved",
+[14]  = "Reserved for special use by agreement",
+[15]  = "Reserved for special use by agreement",
+}
+
+iec103_prm0_func_table = {
+[0]  = "ACK:positive acknowledgement. Frame type: CONFIRM",
+[1]  = "NACK:message not accepted, link busy. Frame type: CONFIRM",
+[2]  = "Reserved",
+[3]  = "Reserved",
+[4]  = "Reserved",
+[5]  = "Reserved",
+[6]  = "Reserved for special use by agreement",
+[7]  = "Reserved for special use by agreement",
+[8]  = "User data. Frame type: RESPOND",
+[9]  = "NACK:requested data not available. Frame type: RESPOND",
+[10]  = "Reserved",
+[11]  = "Status of link or access demand. Frame type: RESPOND",
+[12]  = "Reserved",
+[13]  = "Reserved for special use by agreement",
+[14]  = "Link service not functioning",
+[15]  = "Link service not implemented",
+
+}
+
 iec103_valid_table = {
 [0 ] = "Valid",
 [1 ] = "Invalid"
@@ -140,6 +179,10 @@ local msg_length = ProtoField.uint8("iec103.Msg_Length","Length",base.DEC)
 local msg_length_rep = ProtoField.uint8("iec103.Msg_Length_Rep","Length_Repeat",base.DEC)
 local msg_start_rep = ProtoField.uint8("iec103.Start_Byte_Rep","Start_Repeat",base.HEX)
 local msg_ctrl = ProtoField.uint8("iec103.Control_Field","Control_Field",base.HEX)
+local msg_ctrl_prm = ProtoField.string("iec103.PRM","PRM")
+local msg_ctrl_fcb_acd = ProtoField.string("iec103.FCB_ACD","FCB/ACD")
+local msg_ctrl_fcv_dfc = ProtoField.string("iec103.PRM","FCV/DFC")
+local msg_ctrl_func = ProtoField.string("iec103.FUNCTION","Function")
 
 local msg_link_addr = ProtoField.uint16("iec103.Link_Addr","Link_Addr",base.DEC)
 
@@ -198,7 +241,7 @@ local msg_end = ProtoField.uint8("iec103.End_Byte","End",base.HEX)
 
 local msg_debug = ProtoField.string("iec103.DebugStr","DebugStr")
 
-iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue}
+iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func }
 
 --protocol parameters in Wiresh preference
 local ZEROBYTE   = 0
@@ -399,6 +442,10 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
 	end
 end
 
+function parse_link(t0, buffer,iec103_link_addr_bytes)
+
+end
+
 -- create a function to dissect it
 function iec103.dissector(buffer,pinfo,tree)
    
@@ -413,16 +460,33 @@ function iec103.dissector(buffer,pinfo,tree)
 	if msgstartbyte == 16 then
 		local t0 = tree:add(iec103,buffer(), "IEC 60870-5-103 Fixed Length Message")
 		t0:add(msg_start, buffer(0,1))
-		t0:add(msg_ctrl, buffer(1,1))
+		
+		local prm = buffer(1,1):bitfield(1,1)
+		local fcb_acd  = buffer(1,1):bitfield(2,1)
+		local fcv_dfc  = buffer(1,1):bitfield(3,1)
+		local func  = buffer(1,1):bitfield(4,4)
+		
+		local t1 = t0:add(msg_ctrl, buffer(1,1))
+		
+		t1:add(msg_ctrl_prm,buffer(1,1),tostring(prm))
+		
+		if prm == 1 then
+			t1:add(msg_ctrl_fcb_acd,buffer(1,1)," FCB = "..tostring(fcb_acd))
+			t1:add(msg_ctrl_fcv_dfc,buffer(1,1)," FCV = "..tostring(fcv_dfc))
+			if ((fcv_dfc == 0) and (func == 0 or func == 1 or func == 4 or func == 8 or func == 9)) or 
+			   ((fcv_dfc == 1) and (func == 3 or func == 10 or func == 11)) or
+			   (func == 2 or (func > 5 and func < 7) or (func > 12 and func <15)) then
+				t1:add(msg_ctrl_fcb_acd,buffer(1,1),iec103_prm1_func_table[func])
+			end
+		else
+			t1:add(msg_ctrl_fcb_acd,buffer(1,1)," ACD = "..tostring(fcb_acd))
+			t1:add(msg_ctrl_fcv_dfc,buffer(1,1)," DFC = "..tostring(fcv_dfc))
+			
+			t1:add(msg_ctrl_fcb_acd,buffer(1,1),iec103_prm0_func_table[func])
+		end
 		
 		t0:add_le(msg_link_addr,buffer(2,iec103_link_addr_bytes))
-		
-		--if iec103_link_addr_bytes == 1 then
-		--	t0:add(msg_link_addr,buffer(2,1))
-		--elseif iec103_link_addr_bytes == 2 then
-		--	t0:add_le(msg_link_addr,buffer(2,2))
-		--end
-		
+				
 		t0:add(msg_checksum, buffer(2 + iec103_link_addr_bytes,1))
 		t0:add(msg_end, buffer(3 + iec103_link_addr_bytes,1))
 		
@@ -435,7 +499,31 @@ function iec103.dissector(buffer,pinfo,tree)
 		t0:add(msg_length,buffer(1,1))
 		t0:add(msg_length_rep,buffer(2,1))
 		t0:add(msg_start_rep, buffer(3,1))
-		t0:add(msg_ctrl, buffer(4,1))
+		--t0:add(msg_ctrl, buffer(4,1))
+		
+		local prm = buffer(1,1):bitfield(1,1)
+		local fcb_acd  = buffer(1,1):bitfield(2,1)
+		local fcv_dfc  = buffer(1,1):bitfield(3,1)
+		local func  = buffer(1,1):bitfield(4,4)
+		
+		local t1 = t0:add(msg_ctrl, buffer(1,1))
+		
+		t1:add(msg_ctrl_prm,buffer(1,1),tostring(prm))
+		
+		if prm == 1 then
+			t1:add(msg_ctrl_fcb_acd,buffer(1,1)," FCB = "..tostring(fcb_acd))
+			t1:add(msg_ctrl_fcv_dfc,buffer(1,1)," FCV = "..tostring(fcv_dfc))
+			if ((fcv_dfc == 0) and (func == 0 or func == 1 or func == 4 or func == 8 or func == 9)) or 
+			   ((fcv_dfc == 1) and (func == 3 or func == 10 or func == 11)) or
+			   (func == 2 or (func > 5 and func < 7) or (func > 12 and func <15)) then
+				t1:add(msg_ctrl_fcb_acd,buffer(1,1),iec103_prm1_func_table[func])
+			end
+		else
+			t1:add(msg_ctrl_fcb_acd,buffer(1,1)," ACD = "..tostring(fcb_acd))
+			t1:add(msg_ctrl_fcv_dfc,buffer(1,1)," DFC = "..tostring(fcv_dfc))
+			
+			t1:add(msg_ctrl_fcb_acd,buffer(1,1),iec103_prm0_func_table[func])
+		end
 		
 		t0:add_le(msg_link_addr,buffer(5,iec103_link_addr_bytes))
 		
