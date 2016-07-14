@@ -2,29 +2,33 @@
 
 --Type id description
 iec103_typeid_table = {
-[1 ] = "time-tagged message",
-[2 ] = "time-tagged message with relative time",
-[3 ] = "measurands I",
-[4 ] = "time-tagged measurands with relative time",
-[5 ] = "identification",
-[6 ] = "time synchronization",
-[7 ] = "general interrogation",
-[8 ] = "general interrogation termination",
-[9 ] = "measurands II",
-[10] = "generic data",
-[11] = "generic identification",
-[20] = "general command",
-[21] = "generic command",
-[23] = "list of recorded disturbances",
-[24] = "order for disturbance data transmission",
-[25] = "acknowledgement for disturbance data transmission",
-[26] = "ready for transmission of disturbance data",
-[27] = "ready for transmission of a channel",
-[28] = "ready for transmission of tags",
-[29] = "transmission of tags",
-[30] = "transmission of disturbance values",
-[31] = "end of transmission",
-
+[1 ] = "Time-tagged message",
+[2 ] = "Time-tagged message with relative time",
+[3 ] = "Measurands I",
+[4 ] = "Time-tagged measurands with relative time",
+[5 ] = "Identification",
+[6 ] = "Time synchronization",
+[7 ] = "General interrogation",
+[8 ] = "General interrogation termination",
+[9 ] = "Measurands II",
+[10] = "Generic data",
+[11] = "Generic identification",
+[20] = "General command",
+[21] = "Generic command",
+[23] = "List of recorded disturbances",
+[24] = "Order for disturbance data transmission",
+[25] = "Acknowledgement for disturbance data transmission",
+[26] = "Ready for transmission of disturbance data",
+[27] = "Ready for transmission of a channel",
+[28] = "Ready for transmission of tags",
+[29] = "Transmission of tags",
+[30] = "Transmission of disturbance values",
+[31] = "End of transmission",
+[40] = "Positive acknowledgement of generic write command",
+[41] = "Negative acknowledgement of generic write command",
+[42] = "Valid data response to generic read command",
+[43] = "Invalid data response to generic read command",
+[44] = "Generic write confirmation",
 }
 
 --Type id description
@@ -57,26 +61,26 @@ iec103_kod_table = {
 
 --Cause of transfer
 iec103_cot_table = {
-[1 ] = "spontaneous",
-[2 ] = "cyclic",
-[3 ] = "reset frame count bit (FCB)",
-[4 ] = "reset communication unit (CU)",
-[5 ] = "start / restart",
-[6 ] = "power on",
-[7 ] = "test mode",
-[8 ] = "time synchronization",
-[9 ] = "general interrogation",
-[10] = "termination of general interrogation",
-[11] = "local operation",
-[12] = "remote operation",
-[20] = "positive acknowledgement of command",
-[21] = "negative acknowledgement of command",
-[31] = "transmission of disturbance data",
-[40] = "positive acknowledgement of generic write command",
-[41] = "negative acknowledgement of generic write command",
-[42] = "valid data response to generic read command",
-[43] = "invalid data response to generic read command",
-[44] = "generic write confirmation",
+[1 ] = "Spontaneous",
+[2 ] = "Cyclic",
+[3 ] = "Reset frame count bit (FCB)",
+[4 ] = "Reset communication unit (CU)",
+[5 ] = "Start / restart",
+[6 ] = "Power on",
+[7 ] = "Test mode",
+[8 ] = "Time synchronization",
+[9 ] = "General interrogation",
+[10] = "Termination of general interrogation",
+[11] = "Local operation",
+[12] = "Remote operation",
+[20] = "Positive acknowledgement of command",
+[21] = "Negative acknowledgement of command",
+[31] = "Transmission of disturbance data",
+[40] = "Positive acknowledgement of generic write command",
+[41] = "Negative acknowledgement of generic write command",
+[42] = "Valid data response to generic read command",
+[43] = "Invalid data response to generic read command",
+[44] = "Generic write confirmation",
 }
 
 local iec103_func_type_table = {
@@ -117,16 +121,16 @@ local iec103_data_type_table = {
 }
 
 iec103_prm1_func_table = {
-[0]  = "Reset of Remote link. Frame type: SEND/CONFIRM expected",
-[1]  = "Reset of user process. Frame type: SEND/CONFIRM expected",
-[2]  = "Reserved. Frame type: SEND/CONFIRM expected",
-[3]  = "User data. Frame type: SEND/CONFIRM expected",
-[4]  = "User data. Frame type: SEND/NO REPLY expected",
-[5]  = "Reserved",
-[6]  = "Reserved for special use by agreement",
-[7]  = "Reserved for special use by agreement",
-[8]  = "Expected response specifies access demand. Frame type: REQUEST for access demand",
-[9]  = "Request status of link. Frame type: REQUEST/RESPOND expected",
+[0]   = "Reset of Remote link. Frame type: SEND/CONFIRM expected",
+[1]   = "Reset of user process. Frame type: SEND/CONFIRM expected",
+[2]   = "Reserved. Frame type: SEND/CONFIRM expected",
+[3]   = "User data. Frame type: SEND/CONFIRM expected",
+[4]   = "User data. Frame type: SEND/NO REPLY expected",
+[5]   = "Reserved",
+[6]   = "Reserved for special use by agreement",
+[7]   = "Reserved for special use by agreement",
+[8]   = "Expected response specifies access demand. Frame type: REQUEST for access demand",
+[9]   = "Request status of link. Frame type: REQUEST/RESPOND expected",
 [10]  = "Request user data class 1. Frame type: REQUEST/RESPOND expected",
 [11]  = "Request user data class 2. Frame type: REQUEST/RESPOND expected",
 [12]  = "Reserved",
@@ -136,16 +140,16 @@ iec103_prm1_func_table = {
 }
 
 iec103_prm0_func_table = {
-[0]  = "ACK:positive acknowledgement. Frame type: CONFIRM",
-[1]  = "NACK:message not accepted, link busy. Frame type: CONFIRM",
-[2]  = "Reserved",
-[3]  = "Reserved",
-[4]  = "Reserved",
-[5]  = "Reserved",
-[6]  = "Reserved for special use by agreement",
-[7]  = "Reserved for special use by agreement",
-[8]  = "User data. Frame type: RESPOND",
-[9]  = "NACK:requested data not available. Frame type: RESPOND",
+[0]   = "ACK:positive acknowledgement. Frame type: CONFIRM",
+[1]   = "NACK:message not accepted, link busy. Frame type: CONFIRM",
+[2]   = "Reserved",
+[3]   = "Reserved",
+[4]   = "Reserved",
+[5]   = "Reserved",
+[6]   = "Reserved for special use by agreement",
+[7]   = "Reserved for special use by agreement",
+[8]   = "User data. Frame type: RESPOND",
+[9]   = "NACK:requested data not available. Frame type: RESPOND",
 [10]  = "Reserved",
 [11]  = "Status of link or access demand. Frame type: RESPOND",
 [12]  = "Reserved",
@@ -311,14 +315,80 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
 
 	if msgtypeid:uint() == 1 then
 		t_asdu:add(msg_dpi, buffer(start_pos, 1), iec103_dpi_str_table[buffer(start_pos,1):uint()])
-		t_asdu:add(msg_bin_time, buffer(start_pos+1, 4), buffer(start_pos+1, 4):uint())
-		t_asdu:add(msg_sin,buffer(start_pos+5, 1),buffer(start_pos+5, 1):uint())
+		
+		start_pos = start_pos + 1
+		
+		local tmpstart = start_pos
+		local tmsec = (buffer(start_pos,2):le_uint())/1000.0
+		local msec = string.format("%.3f",tmsec)
+		start_pos = start_pos + 2
+		
+		local validstr = "Invalid"
+		if buffer(start_pos,1):bitfield(0,1) == 0 then
+			validstr = "Valid"
+		else
+			validstr = "Invalid"
+		end
+		
+		local minute = tostring(buffer(start_pos,1):bitfield(2,6))
+		start_pos = start_pos + 1
+		
+		local summertime = ""
+		
+		if (buffer(start_pos,1):bitfield(0,1) == 1) then
+			summertime = "Summer Time"
+		else
+			summertime = "Standard Time"
+		end
+		
+		local hour = tostring(buffer(start_pos,1):bitfield(3,5))
+		
+		t_asdu:add(msg_bin_time, buffer(tmpstart, 4), hour..":"..minute..":"..msec.." "..summertime.." -- "..validstr)
+		
+		start_pos = start_pos + 1
+		t_asdu:add(msg_sin,buffer(start_pos, 1),buffer(start_pos, 1):uint())
+		
 	elseif msgtypeid:uint() == 2 then
 		t_asdu:add(msg_dpi, buffer(start_pos, 1), iec103_dpi_str_table[buffer(start_pos,1):uint()])
-		t_asdu:add(msg_ret,buffer(start_pos+1, 2),buffer(start_pos+1, 2):uint())
-		t_asdu:add(msg_fan,buffer(start_pos+3, 2),buffer(start_pos+3, 2):le_uint())
-		t_asdu:add(msg_bin_time, buffer(start_pos+5, 4), buffer(start_pos+5, 4):uint())
-		t_asdu:add(msg_sin,buffer(start_pos+9, 1),buffer(start_pos+9, 1):uint())
+		start_pos = start_pos + 1
+		
+		t_asdu:add(msg_ret,buffer(start_pos, 2),tostring(buffer(start_pos, 2):le_uint()).."ms")
+		start_pos = start_pos + 2
+		
+		t_asdu:add(msg_fan,buffer(start_pos, 2),buffer(start_pos, 2):le_uint())
+		start_pos = start_pos + 2
+		
+		local tmpstart = start_pos
+		local tmsec = (buffer(start_pos,2):le_uint())/1000.0
+		local msec = string.format("%.3f",tmsec)
+		start_pos = start_pos + 2
+		
+		local validstr = "Invalid"
+		if buffer(start_pos,1):bitfield(0,1) == 0 then
+			validstr = "Valid"
+		else
+			validstr = "Invalid"
+		end
+		
+		local minute = tostring(buffer(start_pos,1):bitfield(2,6))
+		start_pos = start_pos + 1
+		
+		local summertime = ""
+		
+		if (buffer(start_pos,1):bitfield(0,1) == 1) then
+			summertime = "Summer Time"
+		else
+			summertime = "Standard Time"
+		end
+		
+		local hour = tostring(buffer(start_pos,1):bitfield(3,5))
+		
+		t_asdu:add(msg_bin_time, buffer(tmpstart, 4), hour..":"..minute..":"..msec.." "..summertime.." -- "..validstr)
+		
+		start_pos = start_pos + 1
+		
+		--t_asdu:add(msg_bin_time, buffer(start_pos+5, 4), buffer(start_pos+5, 4):uint())
+		t_asdu:add(msg_sin,buffer(start_pos, 1),buffer(start_pos, 1):uint())
 	elseif msgtypeid:uint() == 3 then
 		t_asdu:add(msg_mea,buffer(start_pos,2),"current L2 = "..buffer(start_pos,2):tostring())
 		
