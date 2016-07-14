@@ -347,40 +347,59 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
 		t_asdu:add(msg_col,buffer(start_pos,1),tostring(buffer(start_pos,1):uint()))
 		
 		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"1 :"..buffer(start_pos,1):string())
+		
+		local char1 = string.char(buffer(start_pos,1):uint())
+		start_pos = start_pos + 1
+		local char2 = string.char(buffer(start_pos,1):uint())
+		start_pos = start_pos + 1
+		local char3 = string.char(buffer(start_pos,1):uint())
+		start_pos = start_pos + 1
+		local char4 = string.char(buffer(start_pos,1):uint())
+		start_pos = start_pos + 1
+		local char5 = string.char(buffer(start_pos,1):uint())
+		start_pos = start_pos + 1
+		local char6 = string.char(buffer(start_pos,1):uint())
+		start_pos = start_pos + 1
+		local char7 = string.char(buffer(start_pos,1):uint())
+		start_pos = start_pos + 1
+		local char8 = string.char(buffer(start_pos,1):uint())
+		
+		t_asdu:add(msg_asc,buffer(start_pos,1),": "..char1..char2..char3..char4..char5..char6..char7..char8)
+		
+		--[[
+		start_pos = start_pos + 1
+		t_asdu:add(msg_asc,buffer(start_pos,1),"2 : "..tostring(buffer(start_pos,1)))
 		
 		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"2 :"..buffer(start_pos,1):string())
+		t_asdu:add(msg_asc,buffer(start_pos,1),"3 : "..tostring(buffer(start_pos,1)))
 		
 		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"3 :"..buffer(start_pos,1):string())
+		t_asdu:add(msg_asc,buffer(start_pos,1),"4 : "..tostring(buffer(start_pos,1)))
 		
 		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"4 :"..buffer(start_pos,1):string())
+		t_asdu:add(msg_asc,buffer(start_pos,1),"5 : "..tostring(buffer(start_pos,1)))
 		
 		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"5 :"..buffer(start_pos,1):string())
+		t_asdu:add(msg_asc,buffer(start_pos,1),"6 : "..tostring(buffer(start_pos,1)))
 		
 		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"6 :"..buffer(start_pos,1):string())
+		t_asdu:add(msg_asc,buffer(start_pos,1),"7 : "..tostring(buffer(start_pos,1)))
 		
 		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"7 :"..buffer(start_pos,1):string())
+		t_asdu:add(msg_asc,buffer(start_pos,1),"8 : "..tostring(buffer(start_pos,1)))
+		--]]
+		start_pos = start_pos + 1
+		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 1 : "..tostring(buffer(start_pos,1)))
 		
 		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"8 :"..buffer(start_pos,1):string())
+		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 2 : "..tostring(buffer(start_pos,1)))
 		
 		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 1 :"..buffer(start_pos,1):string())
+		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 3 : "..tostring(buffer(start_pos,1)))
 		
 		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 2 :"..buffer(start_pos,1):string())
+		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 4 : "..tostring(buffer(start_pos,1)))
 		
-		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 3 :"..buffer(start_pos,1):string())
-		
-		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 4 :"..buffer(start_pos,1):string())
 		
 	elseif msgtypeid:uint() == 6 then
 	
@@ -547,28 +566,28 @@ function iec103.dissector(buffer,pinfo,tree)
 		t0:add(msg_start_rep, buffer(3,1))
 		--t0:add(msg_ctrl, buffer(4,1))
 		
-		local prm = buffer(1,1):bitfield(1,1)
-		local fcb_acd  = buffer(1,1):bitfield(2,1)
-		local fcv_dfc  = buffer(1,1):bitfield(3,1)
-		local func  = buffer(1,1):bitfield(4,4)
+		local prm = buffer(4,1):bitfield(1,1)
+		local fcb_acd  = buffer(4,1):bitfield(2,1)
+		local fcv_dfc  = buffer(4,1):bitfield(3,1)
+		local func  = buffer(4,1):bitfield(4,4)
 		
-		local t1 = t0:add(msg_ctrl, buffer(1,1))
+		local t1 = t0:add(msg_ctrl, buffer(4,1))
 		
-		t1:add(msg_ctrl_prm,buffer(1,1),tostring(prm))
+		t1:add(msg_ctrl_prm,buffer(4,1),tostring(prm))
 		
 		if prm == 1 then
-			t1:add(msg_ctrl_fcb_acd,buffer(1,1)," FCB = "..tostring(fcb_acd))
-			t1:add(msg_ctrl_fcv_dfc,buffer(1,1)," FCV = "..tostring(fcv_dfc))
+			t1:add(msg_ctrl_fcb_acd,buffer(4,1)," FCB = "..tostring(fcb_acd))
+			t1:add(msg_ctrl_fcv_dfc,buffer(4,1)," FCV = "..tostring(fcv_dfc))
 			if ((fcv_dfc == 0) and (func == 0 or func == 1 or func == 4 or func == 8 or func == 9)) or 
 			   ((fcv_dfc == 1) and (func == 3 or func == 10 or func == 11)) or
 			   (func == 2 or (func > 5 and func < 7) or (func > 12 and func <15)) then
-				t1:add(msg_ctrl_fcb_acd,buffer(1,1),iec103_prm1_func_table[func])
+				t1:add(msg_ctrl_fcb_acd,buffer(4,1),iec103_prm1_func_table[func])
 			end
 		else
-			t1:add(msg_ctrl_fcb_acd,buffer(1,1)," ACD = "..tostring(fcb_acd))
-			t1:add(msg_ctrl_fcv_dfc,buffer(1,1)," DFC = "..tostring(fcv_dfc))
+			t1:add(msg_ctrl_fcb_acd,buffer(4,1)," ACD = "..tostring(fcb_acd))
+			t1:add(msg_ctrl_fcv_dfc,buffer(4,1)," DFC = "..tostring(fcv_dfc))
 			
-			t1:add(msg_ctrl_fcb_acd,buffer(1,1),iec103_prm0_func_table[func])
+			t1:add(msg_ctrl_fcb_acd,buffer(4,1),iec103_prm0_func_table[func])
 		end
 		
 		t0:add_le(msg_link_addr,buffer(5,iec103_link_addr_bytes))
@@ -601,7 +620,8 @@ function iec103.dissector(buffer,pinfo,tree)
 		t_asdu:add_le(msg_comm_addr, buffer(8+iec103_link_addr_bytes, iec103_comm_addr_bytes))
 		
 		local func_type = buffer(9+iec103_link_addr_bytes, 1):uint()
-		t_asdu:add(msg_func_type,buffer(9+iec103_link_addr_bytes, 1), tostring(func_type) .."-"..iec103_func_type_table[func_type])
+		--t_asdu:add(msg_func_type,buffer(9+iec103_link_addr_bytes, 1), tostring(func_type) .."-"..iec103_func_type_table[func_type])
+		t_asdu:add(msg_func_type,buffer(9+iec103_link_addr_bytes, 1), tostring(func_type))
 		
 		local info_num = buffer(10+iec103_link_addr_bytes, 1):uint()
 		t_asdu:add(msg_info_num,buffer(10+iec103_link_addr_bytes, 1), info_num)
