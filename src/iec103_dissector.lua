@@ -155,6 +155,17 @@ iec103_prm0_func_table = {
 
 }
 
+iec103_dayofweek_table = {
+[0]  = "Mon",
+[1]  = "Tue",
+[2]  = "Wed",
+[3]  = "Thu",
+[4]  = "Fri",
+[5]  = "Sat",
+[6]  = "Sun",
+
+}
+
 iec103_valid_table = {
 [0 ] = "Valid",
 [1 ] = "Invalid"
@@ -372,7 +383,45 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
 		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 4 :"..buffer(start_pos,1):string())
 		
 	elseif msgtypeid:uint() == 6 then
-		t_asdu:add(msg_cp56,buffer(start_pos,7),"")
+	
+		local tmpstart = start_pos
+		local tmsec = (buffer(start_pos,2):le_uint())/1000.0
+		local msec = string.format("%.3f",tmsec)
+		start_pos = start_pos + 2
+		
+		local validstr = "Invalid"
+		if buffer(start_pos,1):bitfield(0,1) == 0 then
+			validstr = "Valid"
+		else
+			validstr = "Invalid"
+		end
+		
+		local minute = tostring(buffer(start_pos,1):bitfield(2,6))
+		start_pos = start_pos + 1
+		
+		local summertime = ""
+		
+		if (buffer(start_pos,1):bitfield(0,1) == 1) then
+			summertime = "Summer Time"
+		else
+			summertime = "Standard Time"
+		end
+		
+		local hour = tostring(buffer(start_pos,1):bitfield(3,5))
+		start_pos = start_pos + 1
+		
+		local dayofweek = iec103_dayofweek_table[buffer(start_pos,1):bitfield(0,3)]
+		local dayofmonth = tostring(buffer(start_pos,1):bitfield(3,5))
+		start_pos = start_pos + 1
+		
+		local month = tostring(buffer(start_pos,1):bitfield(4,4))
+		start_pos = start_pos + 1
+		
+		local year = tostring(2000+buffer(start_pos,1):bitfield(1,7))
+		start_pos = start_pos + 1
+		
+		t_asdu:add(msg_cp56,buffer(tmpstart,7),year.."/"..month.."/"..dayofmonth.."(Y/M/D) "..dayofweek.." "..hour..":"..minute..":"..msec.." "..summertime.." -- "..validstr)
+		
 	elseif msgtypeid:uint() == 7 then
 		t_asdu:add(msg_scn,buffer(start_pos,1), buffer(start_pos,1):uint())
 		
@@ -432,7 +481,7 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
 			
 			for cnt = 1, number, 1 do
 				local gid_data_str = Get_gid_data(t_gid, buffer, start_pos, datatype,datasize)
-				t_gid:add(msg_gid_data,buffer(startdatapos, datasize), tostring(cnt).." "..gid_data_str)
+				t_gid:add(msg_gid_data,buffer(startdatapos, datasize), tostring(cnt).."--> "..gid_data_str)
 				startdatapos = startdatapos + datasize
 			end
 			
@@ -442,9 +491,6 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
 	end
 end
 
-function parse_link(t0, buffer,iec103_link_addr_bytes)
-
-end
 
 -- create a function to dissect it
 function iec103.dissector(buffer,pinfo,tree)
