@@ -309,6 +309,16 @@ function Get_gid_data(t_gid,buffer, start_pos, datatype,datasize)
 		local val = buffer(start_pos,1):uint()
 		local val_2 = val/256.0
 		valstr = string.format("%.6f",val_2)
+	elseif datatype == 6 then
+		local val = buffer(start_pos,2):int()
+		local val_2 = val/32767.0
+		valstr = string.format("%.6f",val_2)
+	elseif datatype == 7 then
+		local val = buffer(start_pos,4):le_float()
+		valstr = string.format("%.6f",val)
+	elseif datatype == 8 then
+		local val = buffer(start_pos,8):float()
+		valstr = string.format("%.6f",val)
 	elseif datatype == 18 then
 		local dpi = buffer(start_pos,1):bitfield(6,2)
 		valstr = "DPI:"..iec103_dpi_str_table[dpi]
