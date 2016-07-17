@@ -793,6 +793,14 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		t_asdu:add(msg_acc, buffer(start_pos, 1), iec103_acc_table[buffer(start_pos,1):uint()])
 		
 	elseif msgtypeid:uint() == 25 then
+		t_asdu:add(msg_too, buffer(start_pos, 1), iec103_too_table[buffer(start_pos,1):uint()])
+		start_pos = start_pos + 1
+		t_asdu:add(msg_tov, buffer(start_pos, 1), iec103_tov_table[buffer(start_pos,1):uint()])
+		start_pos = start_pos + 1
+		t_asdu:add(msg_fan, buffer(start_pos, 2), buffer(start_pos,2):le_uint())
+		start_pos = start_pos + 2
+		t_asdu:add(msg_acc, buffer(start_pos, 1), iec103_acc_table[buffer(start_pos,1):uint()])
+		
 	elseif msgtypeid:uint() == 26 then
 	elseif msgtypeid:uint() == 27 then
 	elseif msgtypeid:uint() == 28 then
