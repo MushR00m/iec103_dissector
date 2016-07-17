@@ -351,13 +351,17 @@ local msg_too = ProtoField.string("iec103.TOO","Type of order")
 local msg_tov = ProtoField.string("iec103.TOV","Type of disturban values")
 local msg_acc = ProtoField.string("iec103.ACC","Actual channel")
 
+local msg_int = ProtoField.string("iec103.INT","Interval between information elements")
+local msg_noc = ProtoField.string("iec103.NOC","Number of channels")
+local msg_noe = ProtoField.string("iec103.NOE","Number of information elements of a channel")
+local msg_nof = ProtoField.string("iec103.NOF","Number of grid faults")
 
 local msg_checksum = ProtoField.uint8("iec103.Check_Sum","Check_Sum",base.HEX)
 local msg_end = ProtoField.uint8("iec103.End_Byte","End",base.HEX)
 
 local msg_debug = ProtoField.string("iec103.DebugStr","DebugStr")
 
-iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc }
+iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc , msg_int, msg_noc, msg_noe, msg_nof}
 
 --protocol parameters in Wiresh preference
 local ZEROBYTE   = 0
@@ -802,6 +806,53 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		t_asdu:add(msg_acc, buffer(start_pos, 1), iec103_acc_table[buffer(start_pos,1):uint()])
 		
 	elseif msgtypeid:uint() == 26 then
+	
+		start_pos = start_pos + 1
+		t_asdu:add(msg_tov, buffer(start_pos, 1), iec103_tov_table[buffer(start_pos,1):uint()])
+		start_pos = start_pos + 1
+		
+		t_asdu:add(msg_fan, buffer(start_pos, 2), buffer(start_pos,2):le_uint())
+		start_pos = start_pos + 2
+		
+		t_asdu:add(msg_nof, buffer(start_pos, 2), buffer(start_pos,2):le_uint())
+		start_pos = start_pos + 2
+		
+		t_asdu:add(msg_noc, buffer(start_pos, 1), buffer(start_pos,1):le_uint())
+		start_pos = start_pos + 1
+
+		t_asdu:add(msg_noe, buffer(start_pos, 2), buffer(start_pos,2):le_uint())
+		start_pos = start_pos + 2
+		
+		t_asdu:add(msg_int, buffer(start_pos, 2), tostring(buffer(start_pos,2):le_uint()).."us")
+		start_pos = start_pos + 2
+		
+		local tmpstart = start_pos
+		local tmsec = (buffer(start_pos,2):le_uint())/1000.0
+		local msec = string.format("%.3f",tmsec)
+		start_pos = start_pos + 2
+		
+		local validstr = "Invalid"
+		if buffer(start_pos,1):bitfield(0,1) == 0 then
+			validstr = "Valid"
+		else
+			validstr = "Invalid"
+		end
+		
+		local minute = tostring(buffer(start_pos,1):bitfield(2,6))
+		start_pos = start_pos + 1
+		
+		local summertime = ""
+		
+		if (buffer(start_pos,1):bitfield(0,1) == 1) then
+			summertime = "Summer Time"
+		else
+			summertime = "Standard Time"
+		end
+		
+		local hour = tostring(buffer(start_pos,1):bitfield(3,5))
+		
+		t_asdu:add(msg_bin_time, buffer(tmpstart, 4), hour..":"..minute..":"..msec.." "..summertime.." -- "..validstr)
+		
 	elseif msgtypeid:uint() == 27 then
 	elseif msgtypeid:uint() == 28 then
 	elseif msgtypeid:uint() == 29 then
