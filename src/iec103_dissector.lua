@@ -356,12 +356,16 @@ local msg_noc = ProtoField.string("iec103.NOC","Number of channels")
 local msg_noe = ProtoField.string("iec103.NOE","Number of information elements of a channel")
 local msg_nof = ProtoField.string("iec103.NOF","Number of grid faults")
 
+local msg_rpv = ProtoField.string("iec103.RPV","Rated primary value")
+local msg_rsv = ProtoField.string("iec103.RSV","Rated secondary value")
+local msg_rfa = ProtoField.string("iec103.RFA","Reference factor")
+
 local msg_checksum = ProtoField.uint8("iec103.Check_Sum","Check_Sum",base.HEX)
 local msg_end = ProtoField.uint8("iec103.End_Byte","End",base.HEX)
 
 local msg_debug = ProtoField.string("iec103.DebugStr","DebugStr")
 
-iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc , msg_int, msg_noc, msg_noe, msg_nof}
+iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc , msg_int, msg_noc, msg_noe, msg_nof, msg_rpv, msg_rfa,msg_rsv}
 
 --protocol parameters in Wiresh preference
 local ZEROBYTE   = 0
@@ -854,6 +858,31 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		t_asdu:add(msg_bin_time, buffer(tmpstart, 4), hour..":"..minute..":"..msec.." "..summertime.." -- "..validstr)
 		
 	elseif msgtypeid:uint() == 27 then
+		start_pos = start_pos + 1
+		t_asdu:add(msg_tov, buffer(start_pos, 1), iec103_tov_table[buffer(start_pos,1):uint()])
+		start_pos = start_pos + 1
+		
+		t_asdu:add(msg_fan, buffer(start_pos, 2), buffer(start_pos,2):le_uint())
+		start_pos = start_pos + 2
+		
+		t_asdu:add(msg_acc, buffer(start_pos, 1), iec103_acc_table[buffer(start_pos,1):uint()])
+		start_pos = start_pos + 1
+		
+		local tmprpv = buffer(start_pos,4):le_float()
+		local valstr = string.format("%.4f",tmprpv)
+		t_asdu:add(msg_rpv, buffer(start_pos, 4), valstr)
+		start_pos = start_pos + 4
+		
+		local tmprsv = buffer(start_pos,4):le_float()
+		valstr = string.format("%.4f",tmprsv)
+		t_asdu:add(msg_rsv, buffer(start_pos, 4), valstr)
+		start_pos = start_pos + 4
+		
+		local tmprfa = buffer(start_pos,4):le_float()
+		valstr = string.format("%.4f",tmprfa)
+		t_asdu:add(msg_rfa, buffer(start_pos, 4), valstr)
+		start_pos = start_pos + 4
+		
 	elseif msgtypeid:uint() == 28 then
 	elseif msgtypeid:uint() == 29 then
 	elseif msgtypeid:uint() == 30 then
