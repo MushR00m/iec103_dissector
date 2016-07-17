@@ -1,4 +1,9 @@
 -- IEC 103 protocol analyzer plugin for Wireshark
+--[[
+Before you use this plugin, please convert you communication traffic into pcap or pcapng format
+Wirtten by: Michael Zhang
+Contacct: michaelxmail[AT]gmail.com
+--]]
 
 --Type id description
 iec103_typeid_table = {
@@ -13,8 +18,17 @@ iec103_typeid_table = {
 [9 ] = "Measurands II",
 [10] = "Generic data",
 [11] = "Generic identification",
+[12] = "Future use",
+[13] = "Future use",
+[14] = "Future use",
+[15] = "Future use",
+[16] = "Future use",
+[17] = "Future use",
+[18] = "Future use",
+[19] = "Future use",
 [20] = "General command",
 [21] = "Generic command",
+[22] = "Future use",
 [23] = "List of recorded disturbances",
 [24] = "Order for disturbance data transmission",
 [25] = "Acknowledgement for disturbance data transmission",
@@ -24,11 +38,30 @@ iec103_typeid_table = {
 [29] = "Transmission of tags",
 [30] = "Transmission of disturbance values",
 [31] = "End of transmission",
+[32] = "Private use",
+[33] = "Private use",
+[34] = "Private use",
+[35] = "Private use",
+[36] = "Private use",
+[37] = "Private use",
+[38] = "Private use",
+[39] = "Private use",
 [40] = "Positive acknowledgement of generic write command",
 [41] = "Negative acknowledgement of generic write command",
 [42] = "Valid data response to generic read command",
 [43] = "Invalid data response to generic read command",
 [44] = "Generic write confirmation",
+[45] = "Private use",
+[46] = "Private use",
+[47] = "Private use",
+[48] = "Private use",
+[49] = "Private use",
+[50] = "Private use",
+[51] = "Private use",
+[52] = "Private use",
+[53] = "Private use",
+[54] = "Private use",
+[55] = "Private use",
 }
 
 --Type id description
@@ -207,6 +240,47 @@ iec103_sof_otev_table = {
 [1] = "Disturbance data recording initiated by other events"
 }
 
+iec103_acc_table = {
+[0] = "Global",
+[1] = "IL1",
+[2] = "IL2",
+[3] = "IL3",
+[4] = "IN",
+[5] = "VL1E",
+[6] = "VL2E",
+[7] = "VL3E",
+[8] = "VEN",
+}
+
+iec103_too_table = {
+[1]  = "Used with ASDU 24, Selection of fault",
+[2]  = "Used with ASDU 24, Request for disturbance data",
+[3]  = "Used with ASDU 24, Abortion of disturbance data",
+[8]  = "Used with ASDU 24, Request for channel",
+[9]  = "Used with ASDU 24, Abortion of channel",
+[16] = "Used with ASDU 24, Request for tags",
+[17] = "Used with ASDU 24, Abortion of tags",
+[24] = "Used with ASDU 24, Request for list of recorded disturbances",
+[32] = "Used with ASDU 31, End of disturbance data transmission without abortion",
+[33] = "Used with ASDU 31, End of disturbance data transmission with abortion by control system",
+[34] = "Used with ASDU 31, End of disturbance data transmission with abortion by the protection equipment",
+[35] = "Used with ASDU 31, End of channel transmission without abortion",
+[36] = "Used with ASDU 31, End of channel transmission with abortion by control system",
+[37] = "Used with ASDU 31, End of channel transmission with abortion by the protection quipment",
+[38] = "Used with ASDU 31, End of tag transmission without abortion",
+[39] = "Used with ASDU 31, End of tag transmission with abortion by control system",
+[40] = "Used with ASDU 31, End of tag transmission with abortion by the protection equipment",
+[64] = "Used with ASDU 25, Disturbance data transmitted successfully (positive)",
+[65] = "Used with ASDU 25, Disturbance data transmitted not successfully (negative)",
+[66] = "Used with ASDU 25, Channel transmitted successfully (positive)",
+[67] = "Used with ASDU 25, Channel transmitted not successfully (negative)",
+[68] = "Used with ASDU 25, Tags transmitted successfully (positive)",
+[69] = "Used with ASDU 25, Tags transmitted not successfully (negative)",
+}
+
+iec103_tov_table = {
+[1] = "Instantaneous values",
+}
 -- declare our protocol
 iec103 = Proto("iec103", "IEC 60870-5-103")
 
@@ -273,12 +347,17 @@ local msg_gid_data = ProtoField.string("iec103.GID_DATA","Data")
 
 local msg_cp56 = ProtoField.string("iec103.CP56Time2a","CP56Time2a")
 
+local msg_too = ProtoField.string("iec103.TOO","Type of order")
+local msg_tov = ProtoField.string("iec103.TOV","Type of disturban values")
+local msg_acc = ProtoField.string("iec103.ACC","Actual channel")
+
+
 local msg_checksum = ProtoField.uint8("iec103.Check_Sum","Check_Sum",base.HEX)
 local msg_end = ProtoField.uint8("iec103.End_Byte","End",base.HEX)
 
 local msg_debug = ProtoField.string("iec103.DebugStr","DebugStr")
 
-iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof }
+iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc }
 
 --protocol parameters in Wiresh preference
 local ZEROBYTE   = 0
@@ -705,6 +784,14 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		
 		
 	elseif msgtypeid:uint() == 24 then
+		t_asdu:add(msg_too, buffer(start_pos, 1), iec103_too_table[buffer(start_pos,1):uint()])
+		start_pos = start_pos + 1
+		t_asdu:add(msg_tov, buffer(start_pos, 1), iec103_tov_table[buffer(start_pos,1):uint()])
+		start_pos = start_pos + 1
+		t_asdu:add(msg_fan, buffer(start_pos, 2), buffer(start_pos,2):le_uint())
+		start_pos = start_pos + 2
+		t_asdu:add(msg_acc, buffer(start_pos, 1), iec103_acc_table[buffer(start_pos,1):uint()])
+		
 	elseif msgtypeid:uint() == 25 then
 	elseif msgtypeid:uint() == 26 then
 	elseif msgtypeid:uint() == 27 then
