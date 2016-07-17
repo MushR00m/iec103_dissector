@@ -360,12 +360,15 @@ local msg_rpv = ProtoField.string("iec103.RPV","Rated primary value")
 local msg_rsv = ProtoField.string("iec103.RSV","Rated secondary value")
 local msg_rfa = ProtoField.string("iec103.RFA","Reference factor")
 
+local msg_not = ProtoField.string("iec103.NOT","Number of tags")
+local msg_tap = ProtoField.string("iec103.TAP","Tag position")
+
 local msg_checksum = ProtoField.uint8("iec103.Check_Sum","Check_Sum",base.HEX)
 local msg_end = ProtoField.uint8("iec103.End_Byte","End",base.HEX)
 
 local msg_debug = ProtoField.string("iec103.DebugStr","DebugStr")
 
-iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc , msg_int, msg_noc, msg_noe, msg_nof, msg_rpv, msg_rfa,msg_rsv}
+iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc , msg_int, msg_noc, msg_noe, msg_nof, msg_rpv, msg_rfa,msg_rsv, msg_not, msg_tap}
 
 --protocol parameters in Wiresh preference
 local ZEROBYTE   = 0
@@ -888,6 +891,31 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		t_asdu:add(msg_fan, buffer(start_pos, 2), buffer(start_pos,2):le_uint())
 		
 	elseif msgtypeid:uint() == 29 then
+		
+		t_asdu:add(msg_fan, buffer(start_pos, 2), buffer(start_pos,2):le_uint())
+		start_pos = start_pos + 2
+		
+		local numoftags = buffer(start_pos,1):le_uint()
+		t_asdu:add(msg_not, buffer(start_pos, 1), buffer(start_pos,1):le_uint())
+		start_pos = start_pos + 1
+	
+		t_asdu:add(msg_tap, buffer(start_pos, 2), buffer(start_pos,2):le_uint())
+		start_pos = start_pos + 2
+			
+		local cnt = 0
+		for cnt = 1, numoftags, 1 do
+			t_tags = t_asdu:add(buffer(start_pos, 3), "Tag "..tostring(cnt)..">>>")
+			
+			t_tags:add(msg_func_type,buffer(start_pos, 1), buffer(start_pos,1):le_uint())
+			start_pos = start_pos + 1
+			
+			t_tags:add(msg_info_num,buffer(start_pos, 1), buffer(start_pos,1):le_uint())
+			start_pos = start_pos + 1
+			
+			t_tags:add(msg_dpi,buffer(start_pos, 1), iec103_dpi_str_table[buffer(start_pos,1):le_uint()])
+			start_pos = start_pos + 1
+		end
+	
 	elseif msgtypeid:uint() == 30 then
 	elseif msgtypeid:uint() == 31 then
 	elseif msgtypeid:uint() == 40 then
