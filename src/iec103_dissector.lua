@@ -289,7 +289,16 @@ function Get_gid_data(t_gid,buffer, start_pos, datatype,datasize)
 		local val = buffer(start_pos,1):uint()
 		valstr = tostring(val)
 	elseif datatype == 2 then
-		valstr = buffer(start_pos,datasize):tostring()
+		
+		local cnt = 0
+		if datasize > 8 then
+			datasize = 8
+		end
+		
+		for cnt = 1, datasize,1 do
+			valstr = valstr.."Bit"..tostring(datasize-cnt+1).."-"..iec103_spi_str_table[buffer(start_pos,1):bitfield(7-datasize+cnt, 1)].." "
+		end
+		--valstr = tostring(datasize)
 	elseif datatype == 3 then
 		local val = buffer(start_pos,datasize):le_uint()
 		valstr = tostring(val)
@@ -561,17 +570,38 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
 			t_gdd:add(msg_gdd_number,buffer(start_pos+2,1),number_str)
 			t_gdd:add(msg_gdd_continue,buffer(start_pos+2,1),contdata_str)
 			
+			local tmpsize = 0
+			
+			if datatype == 2 then  --is BITSTRING
+				tmpsize = math.floor((datasize-1)/8 + 1)
+				--tmpsize = (datasize/8 + 1)
+			else
+				tmpsize = datasize
+			end
+			
 			start_pos = start_pos + 3
-			t_gid = t_dset:add(msg_gid, buffer(start_pos, datasize*number),">>>")
+			t_gid = t_dset:add(msg_gid, buffer(start_pos, tmpsize*number),">>>")
 			
 			local startdatapos = start_pos
 			
 			local cnt = 0
 			
 			for cnt = 1, number, 1 do
-				local gid_data_str = Get_gid_data(t_gid, buffer, start_pos, datatype,datasize)
-				t_gid:add(msg_gid_data,buffer(startdatapos, datasize), tostring(cnt).."--> "..gid_data_str)
-				startdatapos = startdatapos + datasize
+				local gid_data_str = Get_gid_data(t_gid, buffer, startdatapos, datatype,datasize)
+				t_gid:add(msg_gid_data,buffer(startdatapos, tmpsize), tostring(cnt).."--> "..gid_data_str)
+				
+				if datatype == 2 then
+					startdatapos = startdatapos + 1
+					
+					if datasize > 8 then
+					datasize = datasize - 8
+					end
+					
+					tmpsize = math.floor((datasize-1)/8 + 1)
+					
+				else
+					startdatapos = startdatapos + tmpsize
+				end
 			end
 			
 			start_pos = startdatapos
