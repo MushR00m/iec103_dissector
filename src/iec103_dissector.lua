@@ -186,6 +186,27 @@ iec103_dpi_str_table = {
 [2] = "ON",
 [3] = "Indeterminate"
 }
+
+iec103_sof_tp_table = {
+[0] = "Recorded fault without trip",
+[1] = "Recorded fault with trip"
+}
+
+iec103_sof_tm_table = {
+[0] = "Disturbance data waiting for transmission",
+[1] = "Disturbance data currently being transmitted"
+}
+
+iec103_sof_test_table = {
+[0] = "Disturbance data recorded during normal operation",
+[1] = "Disturbance data recorded during test mode"
+}
+
+iec103_sof_otev_table = {
+[0] = "Disturbance data recording initiated by start/pick-up",
+[1] = "Disturbance data recording initiated by other events"
+}
+
 -- declare our protocol
 iec103 = Proto("iec103", "IEC 60870-5-103")
 
@@ -246,6 +267,7 @@ local msg_gdd_continue = ProtoField.string("iec103.GDD_continue","Continue Data"
 local msg_gid = ProtoField.string("iec103.GID","Generic identification data")
 local msg_kod = ProtoField.string("iec103.KOD","Kind of description")
 
+local msg_sof = ProtoField.string("iec103.SOF","Status of fault")
 
 local msg_gid_data = ProtoField.string("iec103.GID_DATA","Data")
 
@@ -256,7 +278,7 @@ local msg_end = ProtoField.uint8("iec103.End_Byte","End",base.HEX)
 
 local msg_debug = ProtoField.string("iec103.DebugStr","DebugStr")
 
-iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func }
+iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof }
 
 --protocol parameters in Wiresh preference
 local ZEROBYTE   = 0
@@ -330,7 +352,7 @@ function Get_gid_data(t_gid,buffer, start_pos, datatype,datasize)
 	return valstr
 end
 
-function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
+function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,msgobjnum)
 
 	if msgtypeid:uint() == 1 then
 		t_asdu:add(msg_dpi, buffer(start_pos, 1), iec103_dpi_str_table[buffer(start_pos,1):uint()])
@@ -421,16 +443,42 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
 		t_asdu:add(msg_mea,buffer(start_pos,2),"reactive power Q = "..buffer(start_pos,2):tostring())
 		
 	elseif msgtypeid:uint() == 4 then
-		t_asdu:add(msg_scl,buffer(start_pos,4),tostring(buffer(start_pos,4):float()))
+		t_asdu:add(msg_scl,buffer(start_pos,4),tostring(buffer(start_pos,4):le_float()))
 		
 		start_pos = start_pos + 4
-		t_asdu:add(msg_ret,buffer(start_pos, 2),buffer(start_pos, 2):uint())
+		t_asdu:add(msg_ret,buffer(start_pos, 2),buffer(start_pos, 2):le_uint())
 		
 		start_pos = start_pos + 2
-		t_asdu:add(msg_fan,buffer(start_pos, 2),buffer(start_pos, 2):uint())
+		t_asdu:add(msg_fan,buffer(start_pos, 2),buffer(start_pos, 2):le_uint())
 		
 		start_pos = start_pos + 2
-		t_asdu:add(msg_bin_time, buffer(start_pos, 4), buffer(start_pos, 4):uint())
+		--t_asdu:add(msg_bin_time, buffer(start_pos, 4), buffer(start_pos, 4):uint())
+		local tmpstart = start_pos
+		local tmsec = (buffer(start_pos,2):le_uint())/1000.0
+		local msec = string.format("%.3f",tmsec)
+		start_pos = start_pos + 2
+		
+		local validstr = "Invalid"
+		if buffer(start_pos,1):bitfield(0,1) == 0 then
+			validstr = "Valid"
+		else
+			validstr = "Invalid"
+		end
+		
+		local minute = tostring(buffer(start_pos,1):bitfield(2,6))
+		start_pos = start_pos + 1
+		
+		local summertime = ""
+		
+		if (buffer(start_pos,1):bitfield(0,1) == 1) then
+			summertime = "Summer Time"
+		else
+			summertime = "Standard Time"
+		end
+		
+		local hour = tostring(buffer(start_pos,1):bitfield(3,5))
+		
+		t_asdu:add(msg_bin_time, buffer(tmpstart, 4), hour..":"..minute..":"..msec.." "..summertime.." -- "..validstr)
 		
 	elseif msgtypeid:uint() == 5 then
 		t_asdu:add(msg_col,buffer(start_pos,1),tostring(buffer(start_pos,1):uint()))
@@ -453,42 +501,16 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
 		start_pos = start_pos + 1
 		local char8 = string.char(buffer(start_pos,1):uint())
 		
-		t_asdu:add(msg_asc,buffer(start_pos,1),": "..char1..char2..char3..char4..char5..char6..char7..char8)
-		
-		--[[
 		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"2 : "..tostring(buffer(start_pos,1)))
-		
+		local ext1 = string.char(buffer(start_pos,1):uint())
 		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"3 : "..tostring(buffer(start_pos,1)))
-		
+		local ext2 = string.char(buffer(start_pos,1):uint())
 		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"4 : "..tostring(buffer(start_pos,1)))
-		
+		local ext3 = string.char(buffer(start_pos,1):uint())
 		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"5 : "..tostring(buffer(start_pos,1)))
+		local ext4 = string.char(buffer(start_pos,1):uint())
 		
-		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"6 : "..tostring(buffer(start_pos,1)))
-		
-		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"7 : "..tostring(buffer(start_pos,1)))
-		
-		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"8 : "..tostring(buffer(start_pos,1)))
-		--]]
-		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 1 : "..tostring(buffer(start_pos,1)))
-		
-		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 2 : "..tostring(buffer(start_pos,1)))
-		
-		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 3 : "..tostring(buffer(start_pos,1)))
-		
-		start_pos = start_pos + 1
-		t_asdu:add(msg_asc,buffer(start_pos,1),"ext 4 : "..tostring(buffer(start_pos,1)))
-		
+		t_asdu:add(msg_asc,buffer(start_pos,1),": "..char1..char2..char3..char4..char5..char6..char7..char8..ext1..ext2..ext3..ext4)
 		
 	elseif msgtypeid:uint() == 6 then
 	
@@ -616,7 +638,85 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos)
 			
 			start_pos = startdatapos
 		end
+	
+	elseif msgtypeid:uint() == 11 then
+	elseif msgtypeid:uint() == 20 then
+	elseif msgtypeid:uint() == 21 then
+	elseif msgtypeid:uint() == 23 then
+	
+		local cnt = 0
 		
+		for cnt = 1, msgobjnum,1 do
+			t_rcd = t_asdu:add(buffer(start_pos, 2),"Disturbance record "..tostring(cnt)..">>>")
+			t_rcd:add(msg_fan,buffer(start_pos, 2),buffer(start_pos, 2):le_uint())
+			start_pos = start_pos + 2
+			
+			local tpstr = tostring(buffer(start_pos, 1):bitfield(7,1)).."-"..iec103_sof_tp_table[buffer(start_pos, 1):bitfield(7,1)]
+			local tmstr = tostring(buffer(start_pos, 1):bitfield(6,1)).."-"..iec103_sof_tm_table[buffer(start_pos, 1):bitfield(6,1)]
+			local teststr = tostring(buffer(start_pos, 1):bitfield(5,1)).."-"..iec103_sof_test_table[buffer(start_pos, 1):bitfield(5,1)]
+			local otevstr = tostring(buffer(start_pos, 1):bitfield(4,1)).."-"..iec103_sof_otev_table[buffer(start_pos, 1):bitfield(4,1)]
+			
+			local t_sof = t_rcd:add(msg_sof,buffer(start_pos, 1),buffer(start_pos, 1):uint())
+			t_sof:add(buffer(start_pos, 1),tpstr)
+			t_sof:add(buffer(start_pos, 1),tmstr)
+			t_sof:add(buffer(start_pos, 1),teststr)
+			t_sof:add(buffer(start_pos, 1),otevstr)
+			
+			start_pos = start_pos + 1
+			
+			local tmpstart = start_pos
+			local tmsec = (buffer(start_pos,2):le_uint())/1000.0
+			local msec = string.format("%.3f",tmsec)
+			start_pos = start_pos + 2
+			
+			local validstr = "Invalid"
+			if buffer(start_pos,1):bitfield(0,1) == 0 then
+				validstr = "Valid"
+			else
+				validstr = "Invalid"
+			end
+			
+			local minute = tostring(buffer(start_pos,1):bitfield(2,6))
+			start_pos = start_pos + 1
+			
+			local summertime = ""
+			
+			if (buffer(start_pos,1):bitfield(0,1) == 1) then
+				summertime = "Summer Time"
+			else
+				summertime = "Standard Time"
+			end
+			
+			local hour = tostring(buffer(start_pos,1):bitfield(3,5))
+			start_pos = start_pos + 1
+			
+			local dayofweek = iec103_dayofweek_table[buffer(start_pos,1):bitfield(0,3)]
+			local dayofmonth = tostring(buffer(start_pos,1):bitfield(3,5))
+			start_pos = start_pos + 1
+			
+			local month = tostring(buffer(start_pos,1):bitfield(4,4))
+			start_pos = start_pos + 1
+			
+			local year = tostring(2000+buffer(start_pos,1):bitfield(1,7))
+			start_pos = start_pos + 1
+			
+			t_rcd:add(msg_cp56,buffer(tmpstart,7),year.."/"..month.."/"..dayofmonth.."(Y/M/D) "..dayofweek.." "..hour..":"..minute..":"..msec.." "..summertime.." -- "..validstr)
+		end
+		
+		
+	elseif msgtypeid:uint() == 24 then
+	elseif msgtypeid:uint() == 25 then
+	elseif msgtypeid:uint() == 26 then
+	elseif msgtypeid:uint() == 27 then
+	elseif msgtypeid:uint() == 28 then
+	elseif msgtypeid:uint() == 29 then
+	elseif msgtypeid:uint() == 30 then
+	elseif msgtypeid:uint() == 31 then
+	elseif msgtypeid:uint() == 40 then
+	elseif msgtypeid:uint() == 41 then
+	elseif msgtypeid:uint() == 42 then
+	elseif msgtypeid:uint() == 43 then
+	elseif msgtypeid:uint() == 44 then
 	end
 end
 
@@ -736,7 +836,7 @@ function iec103.dissector(buffer,pinfo,tree)
 		local info_num = buffer(10+iec103_link_addr_bytes, 1):uint()
 		t_asdu:add(msg_info_num,buffer(10+iec103_link_addr_bytes, 1), info_num)
 		
-		Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,11+iec103_link_addr_bytes)
+		Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,11+iec103_link_addr_bytes,msgobjnum)
 		
 		--[[
 		if msgvsq_sq == 0 then
