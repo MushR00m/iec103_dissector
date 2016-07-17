@@ -884,6 +884,9 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		start_pos = start_pos + 4
 		
 	elseif msgtypeid:uint() == 28 then
+		start_pos = start_pos + 2
+		t_asdu:add(msg_fan, buffer(start_pos, 2), buffer(start_pos,2):le_uint())
+		
 	elseif msgtypeid:uint() == 29 then
 	elseif msgtypeid:uint() == 30 then
 	elseif msgtypeid:uint() == 31 then
