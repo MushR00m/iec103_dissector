@@ -363,12 +363,16 @@ local msg_rfa = ProtoField.string("iec103.RFA","Reference factor")
 local msg_not = ProtoField.string("iec103.NOT","Number of tags")
 local msg_tap = ProtoField.string("iec103.TAP","Tag position")
 
+local msg_nfe = ProtoField.string("iec103.NFE","Number of the ASDU first information element")
+local msg_ndv = ProtoField.string("iec103.NDV","Number of relevant disturbance values per ASDU")
+local msg_sdv = ProtoField.string("iec103.SDV","Single disturbance value")
+
 local msg_checksum = ProtoField.uint8("iec103.Check_Sum","Check_Sum",base.HEX)
 local msg_end = ProtoField.uint8("iec103.End_Byte","End",base.HEX)
 
 local msg_debug = ProtoField.string("iec103.DebugStr","DebugStr")
 
-iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc , msg_int, msg_noc, msg_noe, msg_nof, msg_rpv, msg_rfa,msg_rsv, msg_not, msg_tap}
+iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc , msg_int, msg_noc, msg_noe, msg_nof, msg_rpv, msg_rfa,msg_rsv, msg_not, msg_tap, msg_ndv,msg_nfe,msg_sdv}
 
 --protocol parameters in Wiresh preference
 local ZEROBYTE   = 0
@@ -420,17 +424,17 @@ function Get_gid_data(t_gid,buffer, start_pos, datatype,datasize)
 	elseif datatype == 5 then
 		local val = buffer(start_pos,1):uint()
 		local val_2 = val/256.0
-		valstr = string.format("%.6f",val_2)
+		valstr = string.format("%.4f",val_2)
 	elseif datatype == 6 then
-		local val = buffer(start_pos,2):int()
+		local val = buffer(start_pos,2):le_int()
 		local val_2 = val/32767.0
-		valstr = string.format("%.6f",val_2)
+		valstr = string.format("%.4f",val_2)
 	elseif datatype == 7 then
 		local val = buffer(start_pos,4):le_float()
-		valstr = string.format("%.6f",val)
+		valstr = string.format("%.4f",val)
 	elseif datatype == 8 then
-		local val = buffer(start_pos,8):float()
-		valstr = string.format("%.6f",val)
+		local val = buffer(start_pos,8):le_float()
+		valstr = string.format("%.4f",val)
 	elseif datatype == 18 then
 		local dpi = buffer(start_pos,1):bitfield(6,2)
 		valstr = "DPI:"..iec103_dpi_str_table[dpi]
@@ -917,6 +921,36 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		end
 	
 	elseif msgtypeid:uint() == 30 then
+		
+		start_pos = start_pos + 1
+		
+		t_asdu:add(msg_tov, buffer(start_pos, 1), iec103_tov_table[buffer(start_pos,1):uint()])
+		start_pos = start_pos + 1
+		
+		t_asdu:add(msg_fan, buffer(start_pos, 2), buffer(start_pos,2):le_uint())
+		start_pos = start_pos + 2
+		
+		t_asdu:add(msg_acc, buffer(start_pos, 1), iec103_acc_table[buffer(start_pos,1):uint()])
+		start_pos = start_pos + 1
+		
+		local numofdist = buffer(start_pos,1):uint()
+		t_asdu:add(msg_ndv, buffer(start_pos, 1), tostring(numofdist))
+		start_pos = start_pos + 1
+		
+		t_asdu:add(msg_nfe, buffer(start_pos, 2), buffer(start_pos,2):le_uint())
+		start_pos = start_pos + 2
+		
+		local val = 0
+		local cnt = 0
+		
+		for cnt = 1,numofdist,1 do
+			local val2 = buffer(start_pos,2):le_int() 
+			val = val2/32767.0	
+			t_asdu:add(msg_sdv, buffer(start_pos, 2), tostring(cnt)..": "..string.format("%.4f",val))
+			start_pos = start_pos + 2
+		end
+		
+		
 	elseif msgtypeid:uint() == 31 then
 	elseif msgtypeid:uint() == 40 then
 	elseif msgtypeid:uint() == 41 then
@@ -1036,79 +1070,14 @@ function iec103.dissector(buffer,pinfo,tree)
 		t_asdu:add_le(msg_comm_addr, buffer(8+iec103_link_addr_bytes, iec103_comm_addr_bytes))
 		
 		local func_type = buffer(9+iec103_link_addr_bytes, 1):uint()
-		--t_asdu:add(msg_func_type,buffer(9+iec103_link_addr_bytes, 1), tostring(func_type) .."-"..iec103_func_type_table[func_type])
+
 		t_asdu:add(msg_func_type,buffer(9+iec103_link_addr_bytes, 1), tostring(func_type))
 		
 		local info_num = buffer(10+iec103_link_addr_bytes, 1):uint()
 		t_asdu:add(msg_info_num,buffer(10+iec103_link_addr_bytes, 1), info_num)
 		
 		Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,11+iec103_link_addr_bytes,msgobjnum)
-		
-		--[[
-		if msgvsq_sq == 0 then
-			objlen_total = msgobjnum * (iec103_obj_addr_bytes + iec103_asdu_obj_len_table[msgtypeid:uint()])
-			obj_len_each = iec103_obj_addr_bytes + iec103_asdu_obj_len_table[msgtypeid:uint()]
-		else
-			objlen_total = iec103_obj_addr_bytes + msgobjnum * iec103_asdu_obj_len_table[msgtypeid:uint()]
-			obj_len_each = iec103_asdu_obj_len_table[msgtypeid:uint()]
-		end
-		
-		
-		local obj_start_pos = 8+iec103_link_addr_bytes+iec103_comm_addr_bytes
-		local obj_start_addr = buffer(8+iec103_link_addr_bytes+iec103_comm_addr_bytes, iec103_obj_addr_bytes):le_uint()
-		
-		local t_objs = t_asdu:add(msg_obj,buffer(obj_start_pos, objlen_total),">>> total "..msgobjnum)
-		local obj_addr = 0
-		
-		for cnt = 1, msgobjnum, 1 do
-			
-			--if VSQ SQ = 0, get the address from each object 
-		    if msgvsq_sq == 0 then
-				local t_obj_single = t_objs:add(msg_obj_single,buffer(obj_start_pos, obj_len_each), cnt)
-				obj_addr = buffer(obj_start_pos, iec103_obj_addr_bytes):le_uint()
-				t_obj_single:append_text(" , address: "..obj_addr)
 				
-				t_obj_single:add_le(msg_obj_addr, buffer(obj_start_pos, iec103_obj_addr_bytes))
-				--t_obj_single:add(msg_obj_value,buffer(obj_start_pos+iec103_obj_addr_bytes, iec103_asdu_obj_len_table[msgtypeid:uint()]),"TRUE")
-				Add_Object_Value(t_obj_single,msgtypeid, buffer, obj_start_pos+iec103_obj_addr_bytes)
-				
-			else
-				
-				--if VSQ SQ = 1, get the address from the first object
-				if cnt == 1 then
-					local t_obj_single = t_objs:add(msg_obj_single,buffer(obj_start_pos, obj_len_each+iec103_obj_addr_bytes), cnt)
-					obj_addr = buffer(obj_start_pos, iec103_obj_addr_bytes):le_uint()
-					t_obj_single:append_text(" , address: "..obj_addr)
-				
-					t_obj_single:add_le(msg_obj_addr, buffer(obj_start_pos, iec103_obj_addr_bytes))
-					--t_obj_single:add(msg_obj_value,buffer(obj_start_pos+iec103_obj_addr_bytes, iec103_asdu_obj_len_table[msgtypeid:uint()]),"TRUE")
-					Add_Object_Value(t_obj_single,msgtypeid, buffer, obj_start_pos+iec103_obj_addr_bytes)
-					
-				--update the following object address 
-				else
-					local t_obj_single = t_objs:add(msg_obj_single,buffer(obj_start_pos, obj_len_each), cnt)
-					obj_addr = obj_addr + 1
-					t_obj_single:append_text(" , address: "..obj_addr)
-				
-					t_obj_single:add(msg_obj_addr, buffer(obj_start_pos, iec103_asdu_obj_len_table[msgtypeid:uint()]),obj_addr)
-					--t_obj_single:add(msg_obj_value,buffer(obj_start_pos, iec103_asdu_obj_len_table[msgtypeid:uint()]),"TRUE")
-					Add_Object_Value(t_obj_single,msgtypeid, buffer, obj_start_pos)
-					
-				end
-			end
-			
-			--if VSQ SQ = 1, the object address included in the first object
-			--increasement also need including the object address width
-			if msgvsq_sq == 1 and cnt == 1 then
-				obj_start_pos = obj_start_pos + iec103_obj_addr_bytes + iec103_asdu_obj_len_table[msgtypeid:uint()]
-			else
-				obj_start_pos = obj_start_pos + obj_len_each
-			end
-		
-		end
-		
-		--]]
-		
 		t0:add(msg_checksum, buffer(4 + msglen,1))
 		t0:add(msg_end, buffer(5 + msglen,1))
 		
