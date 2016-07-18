@@ -650,7 +650,7 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		t_asdu:add(msg_scn,buffer(start_pos,1), buffer(start_pos,1):uint())
 		
 	elseif msgtypeid:uint() == 8 then
-	
+		t_asdu:add(msg_scn,buffer(start_pos,1), buffer(start_pos,1):uint())
 	elseif msgtypeid:uint() == 9 then
 	
 	elseif msgtypeid:uint() == 10 then
