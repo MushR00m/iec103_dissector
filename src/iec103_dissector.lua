@@ -253,29 +253,29 @@ iec103_acc_table = {
 }
 
 iec103_too_table = {
-[1]  = "Used with ASDU 24, Selection of fault",
-[2]  = "Used with ASDU 24, Request for disturbance data",
-[3]  = "Used with ASDU 24, Abortion of disturbance data",
-[8]  = "Used with ASDU 24, Request for channel",
-[9]  = "Used with ASDU 24, Abortion of channel",
-[16] = "Used with ASDU 24, Request for tags",
-[17] = "Used with ASDU 24, Abortion of tags",
-[24] = "Used with ASDU 24, Request for list of recorded disturbances",
-[32] = "Used with ASDU 31, End of disturbance data transmission without abortion",
-[33] = "Used with ASDU 31, End of disturbance data transmission with abortion by control system",
-[34] = "Used with ASDU 31, End of disturbance data transmission with abortion by the protection equipment",
-[35] = "Used with ASDU 31, End of channel transmission without abortion",
-[36] = "Used with ASDU 31, End of channel transmission with abortion by control system",
-[37] = "Used with ASDU 31, End of channel transmission with abortion by the protection quipment",
-[38] = "Used with ASDU 31, End of tag transmission without abortion",
-[39] = "Used with ASDU 31, End of tag transmission with abortion by control system",
-[40] = "Used with ASDU 31, End of tag transmission with abortion by the protection equipment",
-[64] = "Used with ASDU 25, Disturbance data transmitted successfully (positive)",
-[65] = "Used with ASDU 25, Disturbance data transmitted not successfully (negative)",
-[66] = "Used with ASDU 25, Channel transmitted successfully (positive)",
-[67] = "Used with ASDU 25, Channel transmitted not successfully (negative)",
-[68] = "Used with ASDU 25, Tags transmitted successfully (positive)",
-[69] = "Used with ASDU 25, Tags transmitted not successfully (negative)",
+[1]  = "Selection of fault",
+[2]  = "Request for disturbance data",
+[3]  = "Abortion of disturbance data",
+[8]  = "Request for channel",
+[9]  = "Abortion of channel",
+[16] = "Request for tags",
+[17] = "Abortion of tags",
+[24] = "Request for list of recorded disturbances",
+[32] = "End of disturbance data transmission without abortion",
+[33] = "End of disturbance data transmission with abortion by control system",
+[34] = "End of disturbance data transmission with abortion by the protection equipment",
+[35] = "End of channel transmission without abortion",
+[36] = "End of channel transmission with abortion by control system",
+[37] = "End of channel transmission with abortion by the protection quipment",
+[38] = "End of tag transmission without abortion",
+[39] = "End of tag transmission with abortion by control system",
+[40] = "End of tag transmission with abortion by the protection equipment",
+[64] = "Disturbance data transmitted successfully (positive)",
+[65] = "Disturbance data transmitted not successfully (negative)",
+[66] = "Channel transmitted successfully (positive)",
+[67] = "Channel transmitted not successfully (negative)",
+[68] = "Tags transmitted successfully (positive)",
+[69] = "Tags transmitted not successfully (negative)",
 }
 
 iec103_tov_table = {
@@ -937,7 +937,8 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		t_asdu:add(msg_ndv, buffer(start_pos, 1), tostring(numofdist))
 		start_pos = start_pos + 1
 		
-		t_asdu:add(msg_nfe, buffer(start_pos, 2), buffer(start_pos,2):le_uint())
+		local numoffirst = buffer(start_pos,2):le_uint()
+		t_asdu:add(msg_nfe, buffer(start_pos, 2), tostring(numoffirst))
 		start_pos = start_pos + 2
 		
 		local val = 0
@@ -946,8 +947,9 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		for cnt = 1,numofdist,1 do
 			local val2 = buffer(start_pos,2):le_int() 
 			val = val2/32767.0	
-			t_asdu:add(msg_sdv, buffer(start_pos, 2), tostring(cnt)..": "..string.format("%.4f",val))
+			t_asdu:add(msg_sdv, buffer(start_pos, 2), tostring(numoffirst)..": "..string.format("%.4f",val))
 			start_pos = start_pos + 2
+			numoffirst = numoffirst + 1
 		end
 		
 		
