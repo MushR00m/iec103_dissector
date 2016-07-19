@@ -387,6 +387,8 @@ local msg_sdv = ProtoField.string("iec103.SDV","Single disturbance value")
 
 local msg_nod = ProtoField.string("iec103.NOD","Number of descriptive elements")
 
+local msg_nog = ProtoField.string("iec103.NOG","Number of generic identifications")
+
 local msg_doc = ProtoField.string("iec103.DCO","Double command")
 
 local msg_checksum = ProtoField.uint8("iec103.Check_Sum","Check_Sum",base.HEX)
@@ -394,7 +396,7 @@ local msg_end = ProtoField.uint8("iec103.End_Byte","End",base.HEX)
 
 local msg_debug = ProtoField.string("iec103.DebugStr","DebugStr")
 
-iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc , msg_int, msg_noc, msg_noe, msg_nof, msg_rpv, msg_rfa,msg_rsv, msg_not, msg_tap, msg_ndv,msg_nfe,msg_sdv, msg_nod,msg_doc}
+iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc , msg_int, msg_noc, msg_noe, msg_nof, msg_rpv, msg_rfa,msg_rsv, msg_not, msg_tap, msg_ndv,msg_nfe,msg_sdv, msg_nod,msg_doc,msg_nog}
 
 --protocol parameters in Wiresh preference
 local ZEROBYTE   = 0
@@ -801,7 +803,7 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		local cnt = 0
 		
 		for cnt = 1,numofdescriptive,1 do
-			local t_dset = t_asdu:add(buffer(start_pos, 1),">>>")
+			local t_dset = t_asdu:add(buffer(start_pos, 1),"Descriptive Element "..tostring(cnt)..">>>")
 			
 			t_dset:add(msg_kod, buffer(start_pos, 1), iec103_kod_table[buffer(start_pos, 1):uint()])
 			start_pos = start_pos + 1
@@ -869,6 +871,26 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		
 		
 	elseif msgtypeid:uint() == 21 then
+		t_asdu:add(msg_rii, buffer(start_pos, 1), buffer(start_pos, 1):uint())
+		start_pos = start_pos + 1
+		
+		local numofgid = buffer(start_pos, 1):uint()
+		
+		t_asdu:add(msg_nog, buffer(start_pos, 1), tostring(numofgid))
+		start_pos = start_pos + 1
+		
+		local cnt = 0
+		
+		for cnt = 1,numofgid,1 do
+			local t_dset = t_asdu:add(buffer(start_pos, 2),"Data set "..tostring(cnt)..">>>")
+			
+			t_dset:add(msg_gin, buffer(start_pos, 2), "Group:"..group_str..",Entry:"..entry_str)
+			start_pos = start_pos + 2
+			
+			t_dset:add(msg_kod, buffer(start_pos, 1), iec103_kod_table[buffer(start_pos, 1):uint()])
+			start_pos = start_pos + 1
+		end
+		
 	elseif msgtypeid:uint() == 23 then
 	
 		local cnt = 0
