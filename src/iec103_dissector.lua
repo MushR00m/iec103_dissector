@@ -62,6 +62,17 @@ iec103_typeid_table = {
 [53] = "Private use",
 [54] = "Private use",
 [55] = "Private use",
+[56] = "Private use",
+[57] = "Private use",
+[58] = "Private use",
+[59] = "Private use",
+[60] = "Private use",
+[61] = "Private use",
+[62] = "Private use",
+[63] = "Private use",
+[64] = "Private use",
+[65] = "Private use",
+
 }
 
 --Type id description
@@ -220,6 +231,13 @@ iec103_dpi_str_table = {
 [3] = "Indeterminate"
 }
 
+iec103_doc_str_table = {
+[0] = "not used",
+[1] = "OFF",
+[2] = "ON",
+[3] = "not used"
+}
+
 iec103_sof_tp_table = {
 [0] = "Recorded fault without trip",
 [1] = "Recorded fault with trip"
@@ -369,12 +387,14 @@ local msg_sdv = ProtoField.string("iec103.SDV","Single disturbance value")
 
 local msg_nod = ProtoField.string("iec103.NOD","Number of descriptive elements")
 
+local msg_doc = ProtoField.string("iec103.DCO","Double command")
+
 local msg_checksum = ProtoField.uint8("iec103.Check_Sum","Check_Sum",base.HEX)
 local msg_end = ProtoField.uint8("iec103.End_Byte","End",base.HEX)
 
 local msg_debug = ProtoField.string("iec103.DebugStr","DebugStr")
 
-iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc , msg_int, msg_noc, msg_noe, msg_nof, msg_rpv, msg_rfa,msg_rsv, msg_not, msg_tap, msg_ndv,msg_nfe,msg_sdv, msg_nod}
+iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc , msg_int, msg_noc, msg_noe, msg_nof, msg_rpv, msg_rfa,msg_rsv, msg_not, msg_tap, msg_ndv,msg_nfe,msg_sdv, msg_nod,msg_doc}
 
 --protocol parameters in Wiresh preference
 local ZEROBYTE   = 0
@@ -840,6 +860,14 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		end
 		
 	elseif msgtypeid:uint() == 20 then
+		
+		t_asdu:add(msg_doc, buffer(start_pos, 1), iec103_doc_str_table[buffer(start_pos, 1):bitfield(6,2)])
+		start_pos = start_pos + 1
+		
+		t_asdu:add(msg_rii, buffer(start_pos, 1), buffer(start_pos, 1):uint())
+		start_pos = start_pos + 1
+		
+		
 	elseif msgtypeid:uint() == 21 then
 	elseif msgtypeid:uint() == 23 then
 	
