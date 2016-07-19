@@ -1145,7 +1145,57 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		end
 		
 	elseif msgtypeid:uint() == 41 then
+		local cnt = 0
+		local spival = 0
+		local invalidstr = 0
+		
+		for cnt = 1,msgobjnum,1 do	
+			spival =  iec103_spi_str_table[buffer(start_pos, 1):bitfield(7,1)]
+			invalidstr =  iec103_valid_table[buffer(start_pos, 1):bitfield(0,1)]
+			t_spi = t_asdu:add(msg_spi,buffer(start_pos, 1), tostring(cnt)..", "..spival.." "..invalidstr)
+			start_pos = start_pos + 1
+			
+			local tmpstart = start_pos
+			local tmsec = (buffer(start_pos,2):le_uint())/1000.0
+			local msec = string.format("%.3f",tmsec)
+			start_pos = start_pos + 2
+			
+			local validstr = "Invalid"
+			if buffer(start_pos,1):bitfield(0,1) == 0 then
+				validstr = "Valid"
+			else
+				validstr = "Invalid"
+			end
+			
+			local minute = tostring(buffer(start_pos,1):bitfield(2,6))
+			start_pos = start_pos + 1
+			
+			local summertime = ""
+			
+			if (buffer(start_pos,1):bitfield(0,1) == 1) then
+				summertime = "Summer Time"
+			else
+				summertime = "Standard Time"
+			end
+			
+			local hour = tostring(buffer(start_pos,1):bitfield(3,5))
+			
+			t_spi:add(msg_bin_time, buffer(tmpstart, 4), hour..":"..minute..":"..msec.." "..summertime.." -- "..validstr)
+			
+		end
+		
+		t_tags:add(msg_sin,buffer(start_pos, 1), buffer(start_pos,1):le_uint())
+		
 	elseif msgtypeid:uint() == 42 then
+		
+		local cnt = 0
+		local dpival =  iec103_dpi_str_table[buffer(start_pos, 1):bitfield(6,1)]
+		local invalidstr =  iec103_valid_table[buffer(start_pos, 1):bitfield(0,1)]
+		
+		for cnt = 1,msgobjnum,1 do	
+			t_asdu:add(msg_dpi,buffer(start_pos, 1), tostring(cnt)..", "..dpival.." "..invalidstr)
+			start_pos = start_pos + 1
+		end
 	elseif msgtypeid:uint() == 43 then
 	elseif msgtypeid:uint() == 44 then
 	end
