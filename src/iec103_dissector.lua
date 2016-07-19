@@ -367,12 +367,14 @@ local msg_nfe = ProtoField.string("iec103.NFE","Number of the ASDU first informa
 local msg_ndv = ProtoField.string("iec103.NDV","Number of relevant disturbance values per ASDU")
 local msg_sdv = ProtoField.string("iec103.SDV","Single disturbance value")
 
+local msg_nod = ProtoField.string("iec103.NOD","Number of descriptive elements")
+
 local msg_checksum = ProtoField.uint8("iec103.Check_Sum","Check_Sum",base.HEX)
 local msg_end = ProtoField.uint8("iec103.End_Byte","End",base.HEX)
 
 local msg_debug = ProtoField.string("iec103.DebugStr","DebugStr")
 
-iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc , msg_int, msg_noc, msg_noe, msg_nof, msg_rpv, msg_rfa,msg_rsv, msg_not, msg_tap, msg_ndv,msg_nfe,msg_sdv}
+iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc , msg_int, msg_noc, msg_noe, msg_nof, msg_rpv, msg_rfa,msg_rsv, msg_not, msg_tap, msg_ndv,msg_nfe,msg_sdv, msg_nod}
 
 --protocol parameters in Wiresh preference
 local ZEROBYTE   = 0
@@ -760,6 +762,83 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		end
 	
 	elseif msgtypeid:uint() == 11 then
+		
+		t_asdu:add(msg_rii, buffer(start_pos, 1), buffer(start_pos, 1):uint())
+		start_pos = start_pos + 1
+		
+		t_dset:add(msg_gin, buffer(start_pos, 2), "Group:"..group_str..",Entry:"..entry_str)
+		start_pos = start_pos + 2
+		
+		local numofdescriptive = buffer(start_pos, 1):bitfield(2,6)
+		local count = buffer(start_pos, 1):bitfield(1,1)
+		local cont = buffer(start_pos, 1):bitfield(0,1)
+		local numofdesstr = "NO: "..tostring(numofdescriptive)
+		local countstr = ";COUNT:"..tostring(count)
+		local contstr = ";CONT"..tostring(cont)
+		t_asdu:add(msg_nde, buffer(start_pos, 1), numofdesstr..countstr..contstr)
+		start_pos = start_pos + 1
+		
+		local cnt = 0
+		
+		for cnt = 1,numofdescriptive,1 do
+			local t_dset = t_asdu:add(buffer(start_pos, 1),">>>")
+			
+			t_dset:add(msg_kod, buffer(start_pos, 1), iec103_kod_table[buffer(start_pos, 1):uint()])
+			start_pos = start_pos + 1
+			
+			local datatype = buffer(start_pos, 1):uint()
+			local datasize = buffer(start_pos+1, 1):uint()
+			local number = buffer(start_pos+2, 1):bitfield(1,7)
+			local cont_d = buffer(start_pos+2, 1):bitfield(0,1)
+			
+			local datatype_str = tostring(datatype)
+			local datasize_str = tostring(datasize)
+			local number_str = tostring(number)
+			local contdata_str = tostring(cont_d)
+			
+			local t_gdd = t_dset:add(msg_gdd, buffer(start_pos, 3), iec103_data_type_table[datatype])
+			
+			t_gdd:add(msg_gdd_datatype,buffer(start_pos,1),datatype_str.."--"..iec103_data_type_table[datatype])
+			t_gdd:add(msg_gdd_datasize,buffer(start_pos+1,1),datasize_str)
+			t_gdd:add(msg_gdd_number,buffer(start_pos+2,1),number_str)
+			t_gdd:add(msg_gdd_continue,buffer(start_pos+2,1),contdata_str)
+			
+			local tmpsize = 0
+				
+			if datatype == 2 then  --is BITSTRING
+				tmpsize = math.floor((datasize-1)/8 + 1)
+				--tmpsize = (datasize/8 + 1)
+			else
+				tmpsize = datasize
+			end
+			
+			start_pos = start_pos + 3
+			t_gid = t_dset:add(msg_gid, buffer(start_pos, tmpsize*number),">>>")
+			
+			local startdatapos = start_pos
+			
+			local cnt = 0
+			
+			for cnt = 1, number, 1 do
+				local gid_data_str = Get_gid_data(t_gid, buffer, startdatapos, datatype,datasize)
+				t_gid:add(msg_gid_data,buffer(startdatapos, tmpsize), tostring(cnt).."--> "..gid_data_str)
+				
+				if datatype == 2 then
+					startdatapos = startdatapos + 1
+					
+					if datasize > 8 then
+					datasize = datasize - 8
+					end
+					
+					tmpsize = math.floor((datasize-1)/8 + 1)
+					
+				else
+					startdatapos = startdatapos + tmpsize
+				end
+			end
+		
+		end
+		
 	elseif msgtypeid:uint() == 20 then
 	elseif msgtypeid:uint() == 21 then
 	elseif msgtypeid:uint() == 23 then
