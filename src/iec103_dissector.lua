@@ -652,7 +652,33 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 	elseif msgtypeid:uint() == 8 then
 		t_asdu:add(msg_scn,buffer(start_pos,1), buffer(start_pos,1):uint())
 	elseif msgtypeid:uint() == 9 then
-	
+		
+		t_asdu:add(msg_mea,buffer(start_pos,2),"current L1 = "..buffer(start_pos,2):tostring())
+		start_pos = start_pos + 2
+		
+		t_asdu:add(msg_mea,buffer(start_pos,2),"current L2 = "..buffer(start_pos,2):tostring())
+		start_pos = start_pos + 2
+		
+		t_asdu:add(msg_mea,buffer(start_pos,2),"current L3 = "..buffer(start_pos,2):tostring())
+		start_pos = start_pos + 2
+		
+		t_asdu:add(msg_mea,buffer(start_pos,2),"voltage L1-E = "..buffer(start_pos,2):tostring())
+		start_pos = start_pos + 2
+		
+		t_asdu:add(msg_mea,buffer(start_pos,2),"voltage L2-E = "..buffer(start_pos,2):tostring())
+		start_pos = start_pos + 2
+		
+		t_asdu:add(msg_mea,buffer(start_pos,2),"voltage L3-E = "..buffer(start_pos,2):tostring())
+		start_pos = start_pos + 2
+		
+		t_asdu:add(msg_mea,buffer(start_pos,2),"active power P = "..buffer(start_pos,2):tostring())
+		start_pos = start_pos + 2
+		
+		t_asdu:add(msg_mea,buffer(start_pos,2),"reactive power Q = "..buffer(start_pos,2):tostring())
+		start_pos = start_pos + 2
+		
+		t_asdu:add(msg_mea,buffer(start_pos,2),"frequency f = "..buffer(start_pos,2):tostring())
+		
 	elseif msgtypeid:uint() == 10 then
 		t_asdu:add(msg_rii, buffer(start_pos, 1), buffer(start_pos, 1):uint())
 		
