@@ -482,41 +482,52 @@ function Get_gid_data(t_gid,buffer, start_pos, datatype,datasize)
 	return valstr
 end
 
+function Get_4_Oct_Bin_Time(buffer, start_pos)
+
+	local tmpstart = start_pos
+	local tmsec = (buffer(tmpstart,2):le_uint())/1000.0
+	local msec = string.format("%.3f",tmsec)
+	tmpstart = tmpstart + 2
+	
+	local validstr = "Invalid"
+	if buffer(tmpstart,1):bitfield(0,1) == 0 then
+		validstr = "Valid"
+	else
+		validstr = "Invalid"
+	end
+	
+	local minute = tostring(buffer(tmpstart,1):bitfield(2,6))
+	tmpstart = tmpstart + 1
+	
+	local summertime = ""
+	
+	if (buffer(tmpstart,1):bitfield(0,1) == 1) then
+		summertime = "Summer Time"
+	else
+		summertime = "Standard Time"
+	end
+	
+	local hour = tostring(buffer(tmpstart,1):bitfield(3,5))
+	
+	tmpstart = tmpstart + 1
+	
+	local valstr = hour..":"..minute..":"..msec.." "..summertime.." -- "..validstr
+	
+	return valstr
+
+end
+
 function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,msgobjnum)
 
 	if msgtypeid:uint() == 1 then
 		t_asdu:add(msg_dpi, buffer(start_pos, 1), iec103_dpi_str_table[buffer(start_pos,1):uint()])
 		
 		start_pos = start_pos + 1
+
+		local timestr = Get_4_Oct_Bin_Time(buffer,start_pos)
+		t_asdu:add(msg_bin_time, buffer(start_pos, 4), timestr)
+		start_pos = start_pos + 4
 		
-		local tmpstart = start_pos
-		local tmsec = (buffer(start_pos,2):le_uint())/1000.0
-		local msec = string.format("%.3f",tmsec)
-		start_pos = start_pos + 2
-		
-		local validstr = "Invalid"
-		if buffer(start_pos,1):bitfield(0,1) == 0 then
-			validstr = "Valid"
-		else
-			validstr = "Invalid"
-		end
-		
-		local minute = tostring(buffer(start_pos,1):bitfield(2,6))
-		start_pos = start_pos + 1
-		
-		local summertime = ""
-		
-		if (buffer(start_pos,1):bitfield(0,1) == 1) then
-			summertime = "Summer Time"
-		else
-			summertime = "Standard Time"
-		end
-		
-		local hour = tostring(buffer(start_pos,1):bitfield(3,5))
-		
-		t_asdu:add(msg_bin_time, buffer(tmpstart, 4), hour..":"..minute..":"..msec.." "..summertime.." -- "..validstr)
-		
-		start_pos = start_pos + 1
 		t_asdu:add(msg_sin,buffer(start_pos, 1),buffer(start_pos, 1):uint())
 		
 	elseif msgtypeid:uint() == 2 then
@@ -529,36 +540,10 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		t_asdu:add(msg_fan,buffer(start_pos, 2),buffer(start_pos, 2):le_uint())
 		start_pos = start_pos + 2
 		
-		local tmpstart = start_pos
-		local tmsec = (buffer(start_pos,2):le_uint())/1000.0
-		local msec = string.format("%.3f",tmsec)
-		start_pos = start_pos + 2
+		local timestr = Get_4_Oct_Bin_Time(buffer,start_pos)
+		t_asdu:add(msg_bin_time, buffer(start_pos, 4), timestr)
+		start_pos = start_pos + 4
 		
-		local validstr = "Invalid"
-		if buffer(start_pos,1):bitfield(0,1) == 0 then
-			validstr = "Valid"
-		else
-			validstr = "Invalid"
-		end
-		
-		local minute = tostring(buffer(start_pos,1):bitfield(2,6))
-		start_pos = start_pos + 1
-		
-		local summertime = ""
-		
-		if (buffer(start_pos,1):bitfield(0,1) == 1) then
-			summertime = "Summer Time"
-		else
-			summertime = "Standard Time"
-		end
-		
-		local hour = tostring(buffer(start_pos,1):bitfield(3,5))
-		
-		t_asdu:add(msg_bin_time, buffer(tmpstart, 4), hour..":"..minute..":"..msec.." "..summertime.." -- "..validstr)
-		
-		start_pos = start_pos + 1
-		
-		--t_asdu:add(msg_bin_time, buffer(start_pos+5, 4), buffer(start_pos+5, 4):uint())
 		t_asdu:add(msg_sin,buffer(start_pos, 1),buffer(start_pos, 1):uint())
 	elseif msgtypeid:uint() == 3 then
 		t_asdu:add(msg_mea,buffer(start_pos,2),"current L2 = "..buffer(start_pos,2):tostring())
@@ -582,33 +567,10 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		t_asdu:add(msg_fan,buffer(start_pos, 2),buffer(start_pos, 2):le_uint())
 		
 		start_pos = start_pos + 2
-		--t_asdu:add(msg_bin_time, buffer(start_pos, 4), buffer(start_pos, 4):uint())
-		local tmpstart = start_pos
-		local tmsec = (buffer(start_pos,2):le_uint())/1000.0
-		local msec = string.format("%.3f",tmsec)
-		start_pos = start_pos + 2
-		
-		local validstr = "Invalid"
-		if buffer(start_pos,1):bitfield(0,1) == 0 then
-			validstr = "Valid"
-		else
-			validstr = "Invalid"
-		end
-		
-		local minute = tostring(buffer(start_pos,1):bitfield(2,6))
-		start_pos = start_pos + 1
-		
-		local summertime = ""
-		
-		if (buffer(start_pos,1):bitfield(0,1) == 1) then
-			summertime = "Summer Time"
-		else
-			summertime = "Standard Time"
-		end
-		
-		local hour = tostring(buffer(start_pos,1):bitfield(3,5))
-		
-		t_asdu:add(msg_bin_time, buffer(tmpstart, 4), hour..":"..minute..":"..msec.." "..summertime.." -- "..validstr)
+
+		local timestr = Get_4_Oct_Bin_Time(buffer,start_pos)
+		t_asdu:add(msg_bin_time, buffer(start_pos, 4), timestr)
+		start_pos = start_pos + 4
 		
 	elseif msgtypeid:uint() == 5 then
 		t_asdu:add(msg_col,buffer(start_pos,1),tostring(buffer(start_pos,1):uint()))
@@ -1003,33 +965,10 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		
 		t_asdu:add(msg_int, buffer(start_pos, 2), tostring(buffer(start_pos,2):le_uint()).."us")
 		start_pos = start_pos + 2
-		
-		local tmpstart = start_pos
-		local tmsec = (buffer(start_pos,2):le_uint())/1000.0
-		local msec = string.format("%.3f",tmsec)
-		start_pos = start_pos + 2
-		
-		local validstr = "Invalid"
-		if buffer(start_pos,1):bitfield(0,1) == 0 then
-			validstr = "Valid"
-		else
-			validstr = "Invalid"
-		end
-		
-		local minute = tostring(buffer(start_pos,1):bitfield(2,6))
-		start_pos = start_pos + 1
-		
-		local summertime = ""
-		
-		if (buffer(start_pos,1):bitfield(0,1) == 1) then
-			summertime = "Summer Time"
-		else
-			summertime = "Standard Time"
-		end
-		
-		local hour = tostring(buffer(start_pos,1):bitfield(3,5))
-		
-		t_asdu:add(msg_bin_time, buffer(tmpstart, 4), hour..":"..minute..":"..msec.." "..summertime.." -- "..validstr)
+
+		local timestr = Get_4_Oct_Bin_Time(buffer,start_pos)
+		t_asdu:add(msg_bin_time, buffer(start_pos, 4), timestr)
+		start_pos = start_pos + 4
 		
 	elseif msgtypeid:uint() == 27 then
 		start_pos = start_pos + 1
@@ -1155,36 +1094,14 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 			t_spi = t_asdu:add(msg_spi,buffer(start_pos, 1), tostring(cnt)..", "..spival.." "..invalidstr)
 			start_pos = start_pos + 1
 			
-			local tmpstart = start_pos
-			local tmsec = (buffer(start_pos,2):le_uint())/1000.0
-			local msec = string.format("%.3f",tmsec)
-			start_pos = start_pos + 2
-			
-			local validstr = "Invalid"
-			if buffer(start_pos,1):bitfield(0,1) == 0 then
-				validstr = "Valid"
-			else
-				validstr = "Invalid"
-			end
-			
-			local minute = tostring(buffer(start_pos,1):bitfield(2,6))
-			start_pos = start_pos + 1
-			
-			local summertime = ""
-			
-			if (buffer(start_pos,1):bitfield(0,1) == 1) then
-				summertime = "Summer Time"
-			else
-				summertime = "Standard Time"
-			end
-			
-			local hour = tostring(buffer(start_pos,1):bitfield(3,5))
-			
-			t_spi:add(msg_bin_time, buffer(tmpstart, 4), hour..":"..minute..":"..msec.." "..summertime.." -- "..validstr)
+			local timestr = Get_4_Oct_Bin_Time(buffer,start_pos)
+
+			t_spi:add(msg_bin_time, buffer(start_pos, 4), timestr)
+			start_pos = start_pos + 4
 			
 		end
 		
-		t_tags:add(msg_sin,buffer(start_pos, 1), buffer(start_pos,1):le_uint())
+		t_asdu:add(msg_sin,buffer(start_pos, 1), buffer(start_pos,1):uint())
 		
 	elseif msgtypeid:uint() == 42 then
 		
@@ -1197,6 +1114,25 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 			start_pos = start_pos + 1
 		end
 	elseif msgtypeid:uint() == 43 then
+		local cnt = 0
+		local dpival = 0
+		local invalidstr = 0
+		local t_dpi = 0
+		
+		for cnt = 1,msgobjnum,1 do	
+			local dpival =  iec103_dpi_str_table[buffer(start_pos, 1):bitfield(6,1)]
+			local invalidstr =  iec103_valid_table[buffer(start_pos, 1):bitfield(0,1)]
+			t_dpi = t_asdu:add(msg_dpi,buffer(start_pos, 1), tostring(cnt)..", "..dpival.." "..invalidstr)
+			start_pos = start_pos + 1
+			
+			local timestr = Get_4_Oct_Bin_Time(buffer,start_pos)
+			
+			t_dpi:add(msg_bin_time,buffer(start_pos,4),timestr)
+			start_pos = start_pos + 4
+		end
+		
+		t_asdu:add(msg_sin,buffer(start_pos, 1), buffer(start_pos,1):uint())
+		
 	elseif msgtypeid:uint() == 44 then
 	end
 end
