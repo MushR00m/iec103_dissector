@@ -165,18 +165,18 @@ local iec103_data_type_table = {
 }
 
 iec103_prm1_func_table = {
-[0]   = "Reset of Remote link. Frame type: SEND/CONFIRM expected",
-[1]   = "Reset of user process. Frame type: SEND/CONFIRM expected",
-[2]   = "Reserved. Frame type: SEND/CONFIRM expected",
-[3]   = "User data. Frame type: SEND/CONFIRM expected",
-[4]   = "User data. Frame type: SEND/NO REPLY expected",
+[0]   = "Reset of Remote link. SEND/CONFIRM expected",
+[1]   = "Reset of user process. SEND/CONFIRM expected",
+[2]   = "Reserved. SEND/CONFIRM expected",
+[3]   = "User data. SEND/CONFIRM expected",
+[4]   = "User data. SEND/NO REPLY expected",
 [5]   = "Reserved",
 [6]   = "Reserved for special use by agreement",
 [7]   = "Reserved for special use by agreement",
-[8]   = "Expected response specifies access demand. Frame type: REQUEST for access demand",
-[9]   = "Request status of link. Frame type: REQUEST/RESPOND expected",
-[10]  = "Request user data class 1. Frame type: REQUEST/RESPOND expected",
-[11]  = "Request user data class 2. Frame type: REQUEST/RESPOND expected",
+[8]   = "Expected response specifies access demand. REQUEST for access demand",
+[9]   = "Request status of link. REQUEST/RESPOND expected",
+[10]  = "Request user data class 1. REQUEST/RESPOND expected",
+[11]  = "Request user data class 2. REQUEST/RESPOND expected",
 [12]  = "Reserved",
 [13]  = "Reserved",
 [14]  = "Reserved for special use by agreement",
@@ -184,18 +184,18 @@ iec103_prm1_func_table = {
 }
 
 iec103_prm0_func_table = {
-[0]   = "ACK:positive acknowledgement. Frame type: CONFIRM",
-[1]   = "NACK:message not accepted, link busy. Frame type: CONFIRM",
+[0]   = "ACK:positive acknowledgement. CONFIRM",
+[1]   = "NACK:message not accepted, link busy. CONFIRM",
 [2]   = "Reserved",
 [3]   = "Reserved",
 [4]   = "Reserved",
 [5]   = "Reserved",
 [6]   = "Reserved for special use by agreement",
 [7]   = "Reserved for special use by agreement",
-[8]   = "User data. Frame type: RESPOND",
-[9]   = "NACK:requested data not available. Frame type: RESPOND",
+[8]   = "User data. RESPOND",
+[9]   = "NACK:requested data not available. RESPOND",
 [10]  = "Reserved",
-[11]  = "Status of link or access demand. Frame type: RESPOND",
+[11]  = "Status of link or access demand. RESPOND",
 [12]  = "Reserved",
 [13]  = "Reserved for special use by agreement",
 [14]  = "Link service not functioning",
@@ -214,10 +214,10 @@ iec103_dayofweek_table = {
 
 }
 
-iec103_valid_table = {
-[0 ] = "Valid",
-[1 ] = "Invalid"
-}
+--iec103_valid_table = {
+--[0 ] = "Valid",
+--[1 ] = "Invalid"
+--}
 
 iec103_spi_str_table = {
 [0] = "OFF",
@@ -278,6 +278,11 @@ iec103_acc_table = {
 [6] = "VL2E",
 [7] = "VL3E",
 [8] = "VEN",
+}
+
+iec103_overflow_table = {
+[0 ] = "No Overflow",
+[1 ] = "Overflow"
 }
 
 iec103_too_table = {
@@ -350,6 +355,7 @@ local msg_ret = ProtoField.string("iec103.Relative_time","Relative time")
 local msg_fan = ProtoField.string("iec103.Fault_number","Fault number")
 
 local msg_mea = ProtoField.string("iec103.Measurands_I","Measurands I")
+local msg_mea2 = ProtoField.string("iec103.Measurands_II","Measurands II")
 local msg_scl = ProtoField.string("iec103.Short_Circuit_Location","Short Circuit Location")
 
 local msg_col = ProtoField.string("iec103.Compatibility_level","Compatibility level")
@@ -408,7 +414,7 @@ local msg_end = ProtoField.uint8("iec103.End_Byte","End",base.HEX)
 
 local msg_debug = ProtoField.string("iec103.DebugStr","DebugStr")
 
-iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc , msg_int, msg_noc, msg_noe, msg_nof, msg_rpv, msg_rfa,msg_rsv, msg_not, msg_tap, msg_ndv,msg_nfe,msg_sdv, msg_nod,msg_doc,msg_nog,msg_spi}
+iec103.fields = {msg_start,msg_length,msg_length_rep,msg_start_rep,msg_ctrl, msg_link_addr, msg_ASDU, msg_typeid, msg_vsq, msg_checksum, msg_end,msg_vsq_sq,msg_vsq_obj_num, msg_cot , msg_comm_addr, msg_func_type,msg_info_num, msg_dpi, msg_bin_time,msg_sin, msg_ret, msg_fan ,msg_rii, msg_ngd, msg_gin, msg_gdd, msg_gid, msg_gid_data, msg_kod, msg_obj_addr, msg_obj, msg_obj_single, msg_obj_value, msg_debug,msg_mea,msg_mea2,msg_scl,msg_asc,msg_col,msg_scn,msg_dset,msg_cp56, msg_gdd_datatype,msg_gdd_datasize,msg_gdd_number,msg_gdd_continue,msg_ctrl_prm,msg_ctrl_fcb_acd, msg_ctrl_fcv_dfc,msg_ctrl_func, msg_sof, msg_too, msg_tov,msg_acc , msg_int, msg_noc, msg_noe, msg_nof, msg_rpv, msg_rfa,msg_rsv, msg_not, msg_tap, msg_ndv,msg_nfe,msg_sdv, msg_nod,msg_doc,msg_nog,msg_spi}
 
 --protocol parameters in Wiresh preference
 local ZEROBYTE   = 0
@@ -546,6 +552,8 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		
 		t_asdu:add(msg_sin,buffer(start_pos, 1),buffer(start_pos, 1):uint())
 	elseif msgtypeid:uint() == 3 then
+		
+		--[[
 		t_asdu:add(msg_mea,buffer(start_pos,2),"current L2 = "..buffer(start_pos,2):tostring())
 		
 		start_pos = start_pos + 2
@@ -556,6 +564,29 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		
 		start_pos = start_pos + 2
 		t_asdu:add(msg_mea,buffer(start_pos,2),"reactive power Q = "..buffer(start_pos,2):tostring())
+		--]]
+		
+		local ovstr
+		local invalidstr
+		local tmp
+		local tmpstr
+		local icnt=0
+		local infocnt = info_num
+		
+		for icnt = 1,msgobjnum,1 do
+		
+			ovstr = iec103_overflow_table[buffer(start_pos, 1):bitfield(7,1)]
+			invalidstr =  iec103_valid_table[buffer(start_pos, 1):bitfield(6,1)]
+			tmp = buffer(start_pos,2):le_int();
+			tmp = bit.rshift(tmp,3)
+			
+			tmpstr = tostring(tmp)
+			tmpstr = tmpstr..", "..invalidstr.." "..ovstr
+			
+			t_asdu:add(msg_mea,buffer(start_pos,2),"Measurands "..tostring(icnt).." [infonum "..tostring(infocnt).."]".." = "..tmpstr)
+			infocnt = infocnt + 1
+			start_pos = start_pos + 2
+		end
 		
 	elseif msgtypeid:uint() == 4 then
 		t_asdu:add(msg_scl,buffer(start_pos,4),tostring(buffer(start_pos,4):le_float()))
@@ -651,32 +682,131 @@ function Get_element(t_asdu, msgtypeid, func_type, info_num, buffer,start_pos,ms
 		t_asdu:add(msg_scn,buffer(start_pos,1), buffer(start_pos,1):uint())
 	elseif msgtypeid:uint() == 9 then
 		
-		t_asdu:add(msg_mea,buffer(start_pos,2),"current L1 = "..buffer(start_pos,2):tostring())
+		local ovstr
+		local invalidstr
+		local tmp
+		local tmpstr
+		local icnt=0
+		local infocnt = info_num
+		
+		for icnt = 1,msgobjnum,1 do
+		
+			ovstr = iec103_overflow_table[buffer(start_pos, 1):bitfield(7,1)]
+			invalidstr =  iec103_valid_table[buffer(start_pos, 1):bitfield(6,1)]
+			tmp = buffer(start_pos,2):le_int();
+			tmp = bit.rshift(tmp,3)
+			
+			tmpstr = tostring(tmp)
+			tmpstr = tmpstr..", "..invalidstr.." "..ovstr
+			
+			t_asdu:add(msg_mea2,buffer(start_pos,2),"Measurands "..tostring(icnt).." [infonum "..tostring(infocnt).."]".." = "..tmpstr)
+			infocnt = infocnt + 1
+			start_pos = start_pos + 2
+		end
+		--[[
+		----------------------
+		ovstr = iec103_overflow_table[buffer(start_pos, 1):bitfield(0,1)]
+		invalidstr =  iec103_valid_table[buffer(start_pos, 1):bitfield(1,1)]
+		tmp = buffer(start_pos,2):le_int();
+		tmp = bit.rshift(tmp,3)
+		tmp = tmp/4096
+		
+		tmpstr = string.format("%.5f",tmp)
+		tmpstr = tmpstr..", "..invalidstr.." "..ovstr
+		
+		t_asdu:add(msg_mea2,buffer(start_pos,2),"current L2 = "..tmpstr)
 		start_pos = start_pos + 2
 		
-		t_asdu:add(msg_mea,buffer(start_pos,2),"current L2 = "..buffer(start_pos,2):tostring())
+		----------------------
+		ovstr = iec103_overflow_table[buffer(start_pos, 1):bitfield(0,1)]
+		invalidstr =  iec103_valid_table[buffer(start_pos, 1):bitfield(1,1)]
+		tmp = buffer(start_pos,2):le_int();
+		tmp = bit.rshift(tmp,3)
+		tmp = tmp/4096
+		
+		tmpstr = string.format("%.5f",tmp)
+		tmpstr = tmpstr..", "..invalidstr.." "..ovstr
+		
+		t_asdu:add(msg_mea2,buffer(start_pos,2),"current L3 = "..tmpstr)
 		start_pos = start_pos + 2
 		
-		t_asdu:add(msg_mea,buffer(start_pos,2),"current L3 = "..buffer(start_pos,2):tostring())
+		----------------------
+		ovstr = iec103_overflow_table[buffer(start_pos, 1):bitfield(0,1)]
+		invalidstr =  iec103_valid_table[buffer(start_pos, 1):bitfield(1,1)]
+		tmp = buffer(start_pos,2):le_int();
+		tmp = bit.rshift(tmp,3)
+		tmp = tmp/4096
+		
+		tmpstr = string.format("%.5f",tmp)
+		tmpstr = tmpstr..", "..invalidstr.." "..ovstr
+		
+		t_asdu:add(msg_mea2,buffer(start_pos,2),"voltage L1-E = "..tmpstr)
 		start_pos = start_pos + 2
 		
-		t_asdu:add(msg_mea,buffer(start_pos,2),"voltage L1-E = "..buffer(start_pos,2):tostring())
+		----------------------
+		ovstr = iec103_overflow_table[buffer(start_pos, 1):bitfield(0,1)]
+		invalidstr =  iec103_valid_table[buffer(start_pos, 1):bitfield(1,1)]
+		tmp = buffer(start_pos,2):le_int();
+		tmp = bit.rshift(tmp,3)
+		tmp = tmp/4096
+		
+		tmpstr = string.format("%.5f",tmp)
+		tmpstr = tmpstr..", "..invalidstr.." "..ovstr
+		
+		t_asdu:add(msg_mea2,buffer(start_pos,2),"voltage L2-E = "..tmpstr)
 		start_pos = start_pos + 2
 		
-		t_asdu:add(msg_mea,buffer(start_pos,2),"voltage L2-E = "..buffer(start_pos,2):tostring())
+		----------------------
+		ovstr = iec103_overflow_table[buffer(start_pos, 1):bitfield(0,1)]
+		invalidstr =  iec103_valid_table[buffer(start_pos, 1):bitfield(1,1)]
+		tmp = buffer(start_pos,2):le_int();
+		tmp = bit.rshift(tmp,3)
+		tmp = tmp/4096
+		
+		tmpstr = string.format("%.5f",tmp)
+		tmpstr = tmpstr..", "..invalidstr.." "..ovstr
+		
+		t_asdu:add(msg_mea2,buffer(start_pos,2),"voltage L3-E = "..tmpstr)
 		start_pos = start_pos + 2
 		
-		t_asdu:add(msg_mea,buffer(start_pos,2),"voltage L3-E = "..buffer(start_pos,2):tostring())
+		----------------------
+		ovstr = iec103_overflow_table[buffer(start_pos, 1):bitfield(0,1)]
+		invalidstr =  iec103_valid_table[buffer(start_pos, 1):bitfield(1,1)]
+		tmp = buffer(start_pos,2):le_int();
+		tmp = bit.rshift(tmp,3)
+		tmp = tmp/4096
+		
+		tmpstr = string.format("%.5f",tmp)
+		tmpstr = tmpstr..", "..invalidstr.." "..ovstr
+		
+		t_asdu:add(msg_mea2,buffer(start_pos,2),"active power P = "..tmpstr)
 		start_pos = start_pos + 2
 		
-		t_asdu:add(msg_mea,buffer(start_pos,2),"active power P = "..buffer(start_pos,2):tostring())
+		----------------------
+		ovstr = iec103_overflow_table[buffer(start_pos, 1):bitfield(0,1)]
+		invalidstr =  iec103_valid_table[buffer(start_pos, 1):bitfield(1,1)]
+		tmp = buffer(start_pos,2):le_int();
+		tmp = bit.rshift(tmp,3)
+		tmp = tmp/4096
+		
+		tmpstr = string.format("%.5f",tmp)
+		tmpstr = tmpstr..", "..invalidstr.." "..ovstr
+		
+		t_asdu:add(msg_mea2,buffer(start_pos,2),"reactive power Q = "..tmpstr)
 		start_pos = start_pos + 2
 		
-		t_asdu:add(msg_mea,buffer(start_pos,2),"reactive power Q = "..buffer(start_pos,2):tostring())
-		start_pos = start_pos + 2
+		----------------------
+		ovstr = iec103_overflow_table[buffer(start_pos, 1):bitfield(0,1)]
+		invalidstr =  iec103_valid_table[buffer(start_pos, 1):bitfield(1,1)]
+		tmp = buffer(start_pos,2):le_int();
+		tmp = bit.rshift(tmp,3)
+		tmp = tmp/4096
 		
-		t_asdu:add(msg_mea,buffer(start_pos,2),"frequency f = "..buffer(start_pos,2):tostring())
+		tmpstr = string.format("%.5f",tmp)
+		tmpstr = tmpstr..", "..invalidstr.." "..ovstr
 		
+		t_asdu:add(msg_mea2,buffer(start_pos,2),"frequency f = "..tmpstr)
+		--]]
 	elseif msgtypeid:uint() == 10 then
 		t_asdu:add(msg_rii, buffer(start_pos, 1), buffer(start_pos, 1):uint())
 		
@@ -1169,12 +1299,14 @@ function iec103.dissector(buffer,pinfo,tree)
 			   ((fcv_dfc == 1) and (func == 3 or func == 10 or func == 11)) or
 			   (func == 2 or (func > 5 and func < 7) or (func > 12 and func <15)) then
 				t1:add(msg_ctrl_fcb_acd,buffer(1,1),iec103_prm1_func_table[func])
+				pinfo.cols.info = iec103_prm1_func_table[func]
 			end
 		else
 			t1:add(msg_ctrl_fcb_acd,buffer(1,1)," ACD = "..tostring(fcb_acd))
 			t1:add(msg_ctrl_fcv_dfc,buffer(1,1)," DFC = "..tostring(fcv_dfc))
 			
 			t1:add(msg_ctrl_fcb_acd,buffer(1,1),iec103_prm0_func_table[func])
+			pinfo.cols.info = iec103_prm0_func_table[func]
 		end
 		
 		t0:add_le(msg_link_addr,buffer(2,iec103_link_addr_bytes))
@@ -1209,12 +1341,14 @@ function iec103.dissector(buffer,pinfo,tree)
 			   ((fcv_dfc == 1) and (func == 3 or func == 10 or func == 11)) or
 			   (func == 2 or (func > 5 and func < 7) or (func > 12 and func <15)) then
 				t1:add(msg_ctrl_fcb_acd,buffer(4,1),iec103_prm1_func_table[func])
+				pinfo.cols.info = iec103_prm1_func_table[func]
 			end
 		else
 			t1:add(msg_ctrl_fcb_acd,buffer(4,1)," ACD = "..tostring(fcb_acd))
 			t1:add(msg_ctrl_fcv_dfc,buffer(4,1)," DFC = "..tostring(fcv_dfc))
 			
 			t1:add(msg_ctrl_fcb_acd,buffer(4,1),iec103_prm0_func_table[func])
+			pinfo.cols.info = iec103_prm0_func_table[func]
 		end
 		
 		t0:add_le(msg_link_addr,buffer(5,iec103_link_addr_bytes))
@@ -1226,6 +1360,8 @@ function iec103.dissector(buffer,pinfo,tree)
 		local msgtypeid = buffer(5+iec103_link_addr_bytes, 1)
 		local t_typeid = t_asdu:add(msg_typeid, msgtypeid)
 		t_typeid:append_text(" ("..iec103_typeid_table[msgtypeid:uint()]..")")
+		
+		pinfo.cols.info = "ASDU "..iec103_typeid_table[msgtypeid:uint()].." "
 		
 		local msgvsq = buffer(6+iec103_link_addr_bytes, 1)
 		local t_vsq = t_asdu:add(msg_vsq,msgvsq)
