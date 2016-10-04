@@ -19,3 +19,7 @@ You can consider use text2pcap.exe that comes with Wireshark, or use tool serial
 	IEC101_SCRIPT_PATH= "C:\\myproto\\"
 	dofile(IEC103_SCRIPT_PATH.."iec103_dissector.lua")
 	5) Save and load the converted serial communication traffic in Wireshark.
+	
+3. Or you can copy lua file to Wireshark plugins folder(bat code):
+	IF NOT EXIST %appdata%\Wireshark\Plugins mkdir %appdata%\Wireshark\Plugins
+	copy iec103_dissector.lua %appdata%\Wireshark\Plugins
