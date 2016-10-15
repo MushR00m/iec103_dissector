@@ -1270,6 +1270,82 @@ end
 
 -- create a function to dissect it
 function iec103.dissector(buffer,pinfo,tree)
+
+local msgstartbyte = buffer(0,1):uint()
+
+if msgstartbyte == 16 then
+	--if message in multiple data packet, need to be reassembled
+	if 5 > buffer:len() then
+		pinfo.desegment_len = 5 - buffer:len()
+	else
+		iec103_do_dissector(buffer,pinfo,tree)
+	end
+elseif msgstartbyte == 104 then
+
+	if buffer:len() >= 2 then
+		local msglen = buffer(1,1):uint()
+		msglen = msglen + 6
+		--if message in multiple data packet, need to be reassembled
+		if msglen > buffer:len() then
+			pinfo.desegment_len = msglen - buffer:len()
+		elseif msglen < buffer:len() then
+			local tmpmsglen = msglen
+			local tmpbufferlen = buffer:len()
+			local tmpmsgstartbyte = 0
+			local tmppos = 0
+			
+			pinfo.cols.info = ""
+			
+			--handle the following situation:
+			--1. TCP frame including multiple completed iec103 data packet
+			--2. TCP frame including multiple completed iec103 data packet and one partial data packet
+			--3. TCP frame including one completed iec103 data packet and one partial data packet
+			while tmpmsglen < tmpbufferlen do
+			
+				iec103_do_dissector(buffer(tmppos,tmpmsglen),pinfo,tree)
+				
+				tmppos = tmppos + tmpmsglen
+				tmpbufferlen = tmpbufferlen - tmpmsglen
+				tmpmsgstartbyte = buffer(tmppos,1):uint()
+				
+				if tmpmsgstartbyte == 104 then
+					if tmpbufferlen > 1 then        --if the remaining length > 1, then it including length info
+						tmpmsglen = buffer(tmppos+1,1):uint()
+						tmpmsglen = tmpmsglen + 6
+					else                            --otherwise, set value greater than 1
+						tmpmsglen = 5
+					end
+				elseif tmpmsgstartbyte == 16 then
+					tmpmsglen = 5				
+				end
+				
+				--remaining data not enough for one complete data frame
+				if tmpmsglen > tmpbufferlen then
+					pinfo.desegment_len = DESEGMENT_ONE_MORE_SEGMENT
+					pinfo.desegment_offset = tmppos
+				end
+			
+			end
+			
+			if tmpmsglen == tmpbufferlen then
+				iec103_do_dissector(buffer(tmppos,tmpmsglen),pinfo,tree)
+			end
+			
+		else
+			pinfo.cols.info = ""
+			iec103_do_dissector(buffer,pinfo,tree)
+		end
+	else 
+		pinfo.desegment_len = DESEGMENT_ONE_MORE_SEGMENT
+	end
+else
+	iec103_do_dissector(buffer,pinfo,tree)
+end
+
+end
+
+
+function iec103_do_dissector(buffer,pinfo,tree)
    
 	pinfo.cols.protocol = iec103.name
 	
@@ -1341,14 +1417,14 @@ function iec103.dissector(buffer,pinfo,tree)
 			   ((fcv_dfc == 1) and (func == 3 or func == 10 or func == 11)) or
 			   (func == 2 or (func > 5 and func < 7) or (func > 12 and func <15)) then
 				t1:add(msg_ctrl_fcb_acd,buffer(4,1),iec103_prm1_func_table[func])
-				pinfo.cols.info = iec103_prm1_func_table[func]
+				--pinfo.cols.info = iec103_prm1_func_table[func]
 			end
 		else
 			t1:add(msg_ctrl_fcb_acd,buffer(4,1)," ACD = "..tostring(fcb_acd))
 			t1:add(msg_ctrl_fcv_dfc,buffer(4,1)," DFC = "..tostring(fcv_dfc))
 			
 			t1:add(msg_ctrl_fcb_acd,buffer(4,1),iec103_prm0_func_table[func])
-			pinfo.cols.info = iec103_prm0_func_table[func]
+			--pinfo.cols.info = iec103_prm0_func_table[func]
 		end
 		
 		t0:add_le(msg_link_addr,buffer(5,iec103_link_addr_bytes))
@@ -1361,7 +1437,12 @@ function iec103.dissector(buffer,pinfo,tree)
 		local t_typeid = t_asdu:add(msg_typeid, msgtypeid)
 		t_typeid:append_text(" ("..iec103_typeid_table[msgtypeid:uint()]..")")
 		
-		pinfo.cols.info = "ASDU "..iec103_typeid_table[msgtypeid:uint()].." "
+		local str1
+		local str2
+		local tmpstr1 = pinfo.cols.info
+		str1 = "ASDU="..tostring(msgtypeid:uint())
+		str2 = str1.format("%-9s",str1)
+		pinfo.cols.info = tostring(tmpstr1)..str2..iec103_typeid_table[msgtypeid:uint()].."; "
 		
 		local msgvsq = buffer(6+iec103_link_addr_bytes, 1)
 		local t_vsq = t_asdu:add(msg_vsq,msgvsq)
